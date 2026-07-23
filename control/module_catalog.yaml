@@ -86,6 +86,16 @@ artifact_types:
       Summary describing how QC thresholds were proposed from the
       observed cell-level and sample-level QC distributions.
 
+  approved_qc_threshold_policy:
+    description: >
+      Human-reviewed QC threshold policy validated for use by
+      QC_FILTER.
+
+  qc_threshold_approval_summary:
+    description: >
+      Validation record containing reviewer identity, approval
+      status, timestamp and enabled threshold count.
+
 modules:
 
   INPUT_DISCOVERY:
@@ -286,6 +296,95 @@ modules:
 
     invalidates:
       - QC_FILTER
+      - QC_VISUALIZATION
+      - QC_DOUBLET_DETECTION
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
+  VALIDATE_QC_THRESHOLD_APPROVAL:
+    stage: qc_control
+    process_name: VALIDATE_QC_THRESHOLD_APPROVAL
+    mode: qc_threshold_approval_phase
+    script: scripts/control/validate_qc_threshold_policy.py
+    runtime_config: approved_qc_threshold_policy.yaml
+
+    config_sections:
+      - plan
+      - experiment
+      - qc
+
+    input_artifacts:
+      - artifact_type: analysis_plan_yaml
+        source: validated_analysis_plan
+
+      - artifact_type: qc_threshold_policy
+        source: human_reviewed_policy
+
+    output_artifacts:
+      - artifact_type: approved_qc_threshold_policy
+        path: control/qc_threshold_approval/approved_qc_threshold_policy.yaml
+
+      - artifact_type: qc_threshold_approval_summary
+        path: control/qc_threshold_approval/qc_threshold_approval.summary.tsv
+
+      - artifact_type: session_info
+        path: control/qc_threshold_approval/qc_threshold_approval.session.txt
+
+    checkpoint_after: PCC_QC_THRESHOLD_APPROVED
+    resource_class: lightweight
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - QC_FILTER
+      - QC_VISUALIZATION
+      - QC_DOUBLET_DETECTION
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
+  QC_FILTER_POLICY:
+    stage: qc
+    process_name: QC_FILTER_POLICY
+    mode: qc_filter_policy_phase
+    script: scripts/01e_qc_filter_policy.R
+    runtime_config: approved_qc_threshold_policy.yaml
+
+    config_sections:
+      - qc_threshold_policy
+
+    input_artifacts:
+      - artifact_type: qc_metrics_seurat
+        path: 01a_qc_metrics/seu_qc_metrics.rds
+
+      - artifact_type: approved_qc_threshold_policy
+        path: control/qc_threshold_approval/approved_qc_threshold_policy.yaml
+
+    output_artifacts:
+      - artifact_type: qc_filtered_seurat
+        path: 01e_qc_filter_policy/seu_qc_filtered.rds
+
+      - artifact_type: metrics
+        path: 01e_qc_filter_policy/01e_qc_filter_summary.csv
+
+      - artifact_type: per_sample_metrics
+        path: 01e_qc_filter_policy/01e_qc_filter_by_sample.csv
+
+      - artifact_type: cell_metadata
+        path: 01e_qc_filter_policy/01e_qc_filter_cell_decisions.csv
+
+      - artifact_type: session_info
+        path: 01e_qc_filter_policy/01e_sessionInfo.txt
+
+    checkpoint_after: PCC_QC_FILTER
+    resource_class: high_memory
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
       - QC_VISUALIZATION
       - QC_DOUBLET_DETECTION
       - QC_SCORES

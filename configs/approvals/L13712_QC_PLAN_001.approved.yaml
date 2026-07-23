@@ -1,0 +1,115 @@
+qc_threshold_policy:
+  schema_version: '1.0'
+  plan_id: L13712_QC_PLAN_001
+  project_id: M15214_TEST
+  biological_run_id: L13712_TEST
+  threshold_mode: hybrid
+  material: cells
+  approval:
+    required: true
+    status: approved
+    reviewed_by: Jimmy Lucas
+    approved_at: '2026-07-23T15:05:54+02:00'
+  application_semantics:
+    minimum_operator: '>='
+    maximum_operator: <=
+    combine_metrics_with: AND
+    missing_metric_action: error
+  thresholds:
+    nFeature_RNA:
+      enabled: true
+      min: 200.0
+      max: 7638.5
+      source: hybrid_default_and_distribution
+      rationale: Conservative combination of material defaults and observed 3×IQR
+        bounds.
+      observed:
+        minimum: 1810.0
+        q25: 3216.5
+        median: 3732.5
+        q75: 4322.0
+        maximum: 6980.0
+      estimated_flagged_cells: 0
+      estimated_flagged_fraction: 0.0
+    nCount_RNA:
+      enabled: true
+      min: 500.0
+      max: 33099.0
+      source: hybrid_default_and_distribution
+      rationale: Conservative combination of material defaults and observed 3×IQR
+        bounds.
+      observed:
+        minimum: 4046.0
+        q25: 8828.0
+        median: 11558.0
+        q75: 14895.75
+        maximum: 40271.0
+      estimated_flagged_cells: 1
+      estimated_flagged_fraction: 0.0025
+    percent.mito:
+      enabled: true
+      min: null
+      max: 11.683210054414623
+      source: hybrid_default_and_distribution
+      rationale: Conservative combination of material defaults and observed 3×IQR
+        bounds.
+      observed:
+        minimum: 2.2706248423177193
+        q25: 4.732342292216013
+        median: 5.529783475651375
+        q75: 6.470059232765665
+        maximum: 20.93335571596441
+      estimated_flagged_cells: 7
+      estimated_flagged_fraction: 0.0175
+    percent.ribo:
+      enabled: false
+      min: null
+      max: null
+      source: observational_only
+      rationale: Metric retained for diagnostics but not used for automatic filtering
+        unless explicitly configured.
+      observed:
+        minimum: 0.8897095853617593
+        q25: 4.5195076362123565
+        median: 5.212976774754596
+        q75: 6.066720203725292
+        maximum: 9.54861111111111
+      estimated_flagged_cells: 0
+      estimated_flagged_fraction: 0.0
+    percent.globin:
+      enabled: false
+      min: null
+      max: null
+      source: observational_only
+      rationale: Metric retained for diagnostics but not used for automatic filtering
+        unless explicitly configured.
+      observed:
+        minimum: 0.0
+        q25: 0.0
+        median: 0.0
+        q75: 0.0
+        maximum: 0.0
+      estimated_flagged_cells: 0
+      estimated_flagged_fraction: 0.0
+    log10GenesPerUMI:
+      enabled: true
+      min: 0.8167532566840741
+      max: null
+      source: hybrid_default_and_distribution
+      rationale: Conservative combination of material defaults and observed 3×IQR
+        bounds.
+      observed:
+        minimum: 0.8347148218754863
+        q25: 0.8706741921057081
+        median: 0.8804208256722738
+        q75: 0.8886478372462527
+        maximum: 0.9152452207166435
+      estimated_flagged_cells: 0
+      estimated_flagged_fraction: 0.0
+  provenance:
+    global_metrics_file: 01a_qc_metrics_summary.csv
+    sample_metrics_file: 01a_qc_metrics_by_sample.csv
+    cell_metadata_file: 01a_qc_metrics_cell_metadata.csv
+    global_metric_rows: 43
+    sample_metric_rows: 2
+    cell_rows: 400

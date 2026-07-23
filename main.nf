@@ -5,6 +5,8 @@ include { QC_PHASE_2 }             from './subworkflow/qc_phase_2'
 include { qc_process }             from './subworkflow/qc_process'
 include { LOAD_PHASE }             from './subworkflow/load_phase'
 include { BBUDY_QC_PROCESS }       from './subworkflow/bbudy/bbudy_qc_process'
+include { QC_THRESHOLD_APPROVAL_PHASE } from './subworkflow/bbudy/qc_threshold_approval_phase'
+include { QC_FILTER_POLICY_PHASE } from './subworkflow/bbudy/qc_filter_policy_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -65,6 +67,115 @@ workflow {
         BBUDY_QC_PROCESS(
             scientific_meta_ch,
             analysis_plan_ch
+        )
+
+
+    /*
+     * MODE: qc_threshold_approval_phase
+     *
+     * Validate a human-reviewed QC threshold policy.
+     */
+    } else if (
+        params.mode == 'qc_threshold_approval_phase'
+    ) {
+
+        if (!params.analysis_plan) {
+            error """
+            The qc_threshold_approval_phase mode requires:
+
+            --analysis_plan <path_to_analysis_plan.yaml>
+            """.stripIndent()
+        }
+
+        if (!params.approved_qc_threshold_policy) {
+            error """
+            The qc_threshold_approval_phase mode requires:
+
+            --approved_qc_threshold_policy <path_to_reviewed_policy.yaml>
+            """.stripIndent()
+        }
+
+        reviewed_plan = file(
+            params.analysis_plan,
+            checkIfExists: true
+        )
+
+        reviewed_policy = file(
+            params.approved_qc_threshold_policy,
+            checkIfExists: true
+        )
+
+        plan_artifact_ch = Channel.value(
+            tuple(
+                scientific_meta + [
+                    stage         : 'analysis_plan',
+                    artifact_type : 'analysis_plan_yaml'
+                ],
+                reviewed_plan
+            )
+        )
+
+        reviewed_policy_artifact_ch = Channel.value(
+            tuple(
+                scientific_meta + [
+                    stage           : 'qc_threshold_review',
+                    artifact_type   : 'qc_threshold_policy',
+                    approval_status : 'human_reviewed'
+                ],
+                reviewed_policy
+            )
+        )
+
+        QC_THRESHOLD_APPROVAL_PHASE(
+            plan_artifact_ch,
+            reviewed_policy_artifact_ch
+        )
+
+
+    /*
+     * MODE: qc_filter_policy_phase
+     *
+     * Apply a human-approved and validated QC threshold policy
+     * to an existing QC-metrics Seurat artifact.
+     */
+    } else if (
+        params.mode == 'qc_filter_policy_phase'
+    ) {
+
+        if (!params.input_object) {
+            error """
+            The qc_filter_policy_phase mode requires:
+
+            --input_object <path_to_qc_metrics_object.rds>
+            """.stripIndent()
+        }
+
+        if (!params.approved_qc_threshold_policy) {
+            error """
+            The qc_filter_policy_phase mode requires:
+
+            --approved_qc_threshold_policy <path_to_validated_policy.yaml>
+            """.stripIndent()
+        }
+
+        qc_metrics_object_ch = Channel.value(
+            file(
+                params.input_object,
+                checkIfExists: true
+            )
+        )
+
+        approved_policy_ch = Channel.value(
+            file(
+                params.approved_qc_threshold_policy,
+                checkIfExists: true
+            )
+        )
+
+        QC_FILTER_POLICY_PHASE(
+            scientific_meta_ch,
+            qc_metrics_object_ch,
+            approved_policy_ch
         )
 
 
@@ -448,6 +559,8 @@ workflow {
             Available modes:
 
             - bbudy_qc_process
+            - qc_threshold_approval_phase
+            - qc_filter_policy_phase
             - qc_process
             - load_phase
             - qc_filter_phase
