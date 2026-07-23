@@ -76,6 +76,16 @@ artifact_types:
       Seurat object with QC metrics added while preserving all cells
       and features from the loaded input object.
 
+  qc_threshold_policy:
+    description: >
+      Proposed or approved QC threshold policy containing explicit
+      per-metric bounds, provenance, rationale and approval status.
+
+  qc_threshold_resolution:
+    description: >
+      Summary describing how QC thresholds were proposed from the
+      observed cell-level and sample-level QC distributions.
+
 modules:
 
   INPUT_DISCOVERY:
@@ -222,6 +232,59 @@ modules:
 
     invalidates:
       - QC_THRESHOLD_RESOLUTION
+      - QC_FILTER
+      - QC_VISUALIZATION
+      - QC_DOUBLET_DETECTION
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
+  QC_THRESHOLD_RESOLUTION:
+    stage: qc
+    process_name: QC_THRESHOLD_RESOLUTION
+    mode: bbudy_qc_process
+    script: scripts/control/resolve_qc_thresholds.py
+    runtime_config: analysis_plan.yaml
+
+    config_sections:
+      - plan
+      - experiment
+      - inputs
+      - qc
+
+    input_artifacts:
+      - artifact_type: analysis_plan_yaml
+        source: validated_analysis_plan
+
+      - artifact_type: metrics
+        path: 01a_qc_metrics/01a_qc_metrics_summary.csv
+
+      - artifact_type: per_sample_metrics
+        path: 01a_qc_metrics/01a_qc_metrics_by_sample.csv
+
+      - artifact_type: cell_metadata
+        path: 01a_qc_metrics/01a_qc_metrics_cell_metadata.csv
+
+    output_artifacts:
+      - artifact_type: qc_threshold_policy
+        path: control/qc_thresholds/qc_threshold_policy.yaml
+
+      - artifact_type: qc_threshold_policy
+        path: control/qc_thresholds/qc_threshold_policy.tsv
+
+      - artifact_type: qc_threshold_resolution
+        path: control/qc_thresholds/qc_threshold_resolution.summary.tsv
+
+      - artifact_type: session_info
+        path: control/qc_thresholds/qc_threshold_resolution.session.txt
+
+    checkpoint_after: PCC_QC_THRESHOLD_RESOLUTION
+    resource_class: lightweight
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
       - QC_FILTER
       - QC_VISUALIZATION
       - QC_DOUBLET_DETECTION
@@ -411,12 +474,6 @@ modules:
 
 
 future_modules:
-
-  QC_THRESHOLD_RESOLUTION:
-    stage: qc
-    expected_input_artifact: qc_metrics_seurat
-    expected_output_artifact: qc_threshold_policy
-    checkpoint_after: PCC_QC_THRESHOLD_RESOLUTION
 
   SAMPLE_RESOLUTION:
     stage: sample_resolution

@@ -1,11 +1,12 @@
 nextflow.enable.dsl=2
 
-include { VALIDATE_ANALYSIS_PLAN }  from '../../modules/control/validate_analysis_plan'
-include { RESOLVE_ANALYSIS_PLAN }   from '../../modules/control/resolve_analysis_plan'
-include { INPUT_DISCOVERY }         from '../../modules/control/input_discovery'
+include { VALIDATE_ANALYSIS_PLAN }   from '../../modules/control/validate_analysis_plan'
+include { RESOLVE_ANALYSIS_PLAN }    from '../../modules/control/resolve_analysis_plan'
+include { INPUT_DISCOVERY }          from '../../modules/control/input_discovery'
 include { RESOLVE_LOAD_CONFIG }      from '../../modules/control/resolve_load_config'
-include { LOAD_DATA }               from '../../modules/load'
+include { LOAD_DATA }                from '../../modules/load'
 include { QC_METRICS }               from '../../modules/qc_metrics'
+include { QC_THRESHOLD_RESOLUTION }  from '../../modules/control/resolve_qc_thresholds'
 
 workflow BBUDY_QC_PROCESS {
 
@@ -77,6 +78,13 @@ workflow BBUDY_QC_PROCESS {
         )
     )
 
+    qc_threshold_resolution_script_ch = Channel.value(
+        file(
+            "${projectDir}/scripts/control/resolve_qc_thresholds.py",
+            checkIfExists: true
+        )
+    )
+
     VALIDATE_ANALYSIS_PLAN(
         plan_artifact_ch,
         validation_script_ch
@@ -112,6 +120,14 @@ workflow BBUDY_QC_PROCESS {
         qc_metrics_script_ch
     )
 
+    QC_THRESHOLD_RESOLUTION(
+        VALIDATE_ANALYSIS_PLAN.out.validated_plan,
+        QC_METRICS.out.summary,
+        QC_METRICS.out.by_sample,
+        QC_METRICS.out.cell_metadata,
+        qc_threshold_resolution_script_ch
+    )
+
     emit:
 
     validated_plan = VALIDATE_ANALYSIS_PLAN.out.validated_plan
@@ -139,5 +155,17 @@ workflow BBUDY_QC_PROCESS {
     qc_metrics_by_sample = QC_METRICS.out.by_sample
     qc_metrics_cell_metadata = QC_METRICS.out.cell_metadata
     qc_metrics_session_info = QC_METRICS.out.session_info
+
+    qc_threshold_policy_yaml =
+        QC_THRESHOLD_RESOLUTION.out.policy_yaml
+
+    qc_threshold_policy_tsv =
+        QC_THRESHOLD_RESOLUTION.out.policy_tsv
+
+    qc_threshold_resolution_summary =
+        QC_THRESHOLD_RESOLUTION.out.summary
+
+    qc_threshold_resolution_session_info =
+        QC_THRESHOLD_RESOLUTION.out.session_info
 
 }

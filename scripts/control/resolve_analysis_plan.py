@@ -42,7 +42,7 @@ MODULE_IMPLEMENTATION_STATE = {
     "LOAD_DATA": "available",
     "QC_METRICS": "available",
     "QC_VISUALIZATION": "legacy_available",
-    "QC_THRESHOLD_RESOLUTION": "planned",
+    "QC_THRESHOLD_RESOLUTION": "available",
     "QC_FILTER": "legacy_available",
     "QC_DOUBLET_DETECTION": "legacy_available",
     "SAMPLE_RESOLUTION": "planned",

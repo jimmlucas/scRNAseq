@@ -34,7 +34,7 @@ routing:
   load_data: true
   qc_metrics: true
   qc_visualization: false
-  qc_threshold_resolution: false
+  qc_threshold_resolution: true
   qc_filter: false
   doublet_detection: false
   sample_resolution: false
