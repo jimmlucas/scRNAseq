@@ -20,9 +20,20 @@ workflow QC_PHASE_1 {
         )
     )
 
+    load_config_artifact_ch = scientific_meta_ch
+        .combine(load_config_ch)
+        .map { meta, config_file ->
+            tuple(
+                meta + [
+                    stage       : 'load_config',
+                    artifact    : 'resolved_load_config'
+                ],
+                config_file
+            )
+        }
+
     LOAD_DATA(
-        scientific_meta_ch,
-        load_config_ch,
+        load_config_artifact_ch,
         load_script_ch
     )
 

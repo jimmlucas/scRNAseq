@@ -10,8 +10,7 @@ process LOAD_DATA {
         params.r_image}"
 
     input:
-    val meta
-    path config_file
+    tuple val(meta), path(config_file)
     path load_script
 
     output:
@@ -29,5 +28,26 @@ process LOAD_DATA {
     Rscript ${load_script} \
         --config ${config_file} \
         --project_dir ${projectDir}
+    """
+
+    stub:
+
+    output_meta = meta + [
+        stage         : 'load_data',
+        artifact_type : 'loaded_seurat'
+    ]
+
+    """
+    touch seu.rds
+
+    cat > 00_load_data_summary.csv <<'CSV'
+    status,mode
+    success,stub
+    CSV
+
+    cat > 00_sessionInfo.txt <<'TXT'
+    stub=true
+    process=LOAD_DATA
+    TXT
     """
 }

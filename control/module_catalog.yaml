@@ -19,6 +19,11 @@ artifact_types:
       Resolved availability and execution state for every route
       requested in the analysis plan.
 
+  resolved_load_config:
+    description: >
+      Runtime LOAD_DATA configuration resolved from a validated
+      BBUDY analysis plan.
+
   input_inventory:
     description: >
       Lightweight inventory of declared inputs, metadata columns,
