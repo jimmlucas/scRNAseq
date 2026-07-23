@@ -1,13 +1,8 @@
 nextflow.enable.dsl=2
 
-include {
-    VALIDATE_ANALYSIS_PLAN
-} from '../../modules/control/validate_analysis_plan'
-
-include {
-    RESOLVE_ANALYSIS_PLAN
-} from '../../modules/control/resolve_analysis_plan'
-
+include { VALIDATE_ANALYSIS_PLAN }  from '../../modules/control/validate_analysis_plan'
+include { RESOLVE_ANALYSIS_PLAN }   from '../../modules/control/resolve_analysis_plan'
+include { INPUT_DISCOVERY }         from '../../modules/control/input_discovery'
 
 workflow BBUDY_QC_PROCESS {
 
@@ -51,6 +46,13 @@ workflow BBUDY_QC_PROCESS {
             )
         }
 
+    input_discovery_script_ch = Channel.value(
+        file(
+            "${projectDir}/scripts/control/input_discovery.py",
+            checkIfExists: true
+        )
+    )
+
     VALIDATE_ANALYSIS_PLAN(
         plan_artifact_ch,
         validation_script_ch
@@ -62,23 +64,25 @@ workflow BBUDY_QC_PROCESS {
         routing_script_ch
     )
 
+    INPUT_DISCOVERY(
+        VALIDATE_ANALYSIS_PLAN.out.validated_plan,
+        RESOLVE_ANALYSIS_PLAN.out.resolved_routing,
+        input_discovery_script_ch
+    )
+
     emit:
 
-    validated_plan =
-        VALIDATE_ANALYSIS_PLAN.out.validated_plan
+    validated_plan = VALIDATE_ANALYSIS_PLAN.out.validated_plan
+    validation_summary = VALIDATE_ANALYSIS_PLAN.out.validation_summary
+    validation_session_info = VALIDATE_ANALYSIS_PLAN.out.session_info
 
-    validation_summary =
-        VALIDATE_ANALYSIS_PLAN.out.validation_summary
+    resolved_routing = RESOLVE_ANALYSIS_PLAN.out.resolved_routing
+    routing_summary = RESOLVE_ANALYSIS_PLAN.out.routing_summary
+    routing_session_info = RESOLVE_ANALYSIS_PLAN.out.session_info
 
-    resolved_routing =
-        RESOLVE_ANALYSIS_PLAN.out.resolved_routing
+    input_inventory = INPUT_DISCOVERY.out.inventory
+    input_sample_summary = INPUT_DISCOVERY.out.sample_summary
+    input_discovery_summary = INPUT_DISCOVERY.out.summary
+    input_discovery_session_info = INPUT_DISCOVERY.out.session_info
 
-    routing_summary =
-        RESOLVE_ANALYSIS_PLAN.out.routing_summary
-
-    validation_session_info =
-        VALIDATE_ANALYSIS_PLAN.out.session_info
-
-    routing_session_info =
-        RESOLVE_ANALYSIS_PLAN.out.session_info
 }

@@ -38,7 +38,7 @@ ROUTING_TO_PIPELINE_MODULE = {
 # planned:
 #   The module is part of the target design but is not implemented.
 MODULE_IMPLEMENTATION_STATE = {
-    "INPUT_DISCOVERY": "planned",
+    "INPUT_DISCOVERY": "available",
     "LOAD_DATA": "available",
     "QC_METRICS": "planned",
     "QC_VISUALIZATION": "legacy_available",

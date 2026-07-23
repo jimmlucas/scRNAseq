@@ -44,7 +44,7 @@ workflow {
      * The analysis plan defines the experiment structure,
      * enabled modules and decisions requiring approval.
      */
-    
+
     if (params.mode == 'bbudy_qc_process') {
 
         if (!params.analysis_plan) {
@@ -72,7 +72,7 @@ workflow {
      * MODE: load_phase
      */
     } else if (params.mode == 'load_phase') {
-        
+
         if (!params.load_config) {
             error """
             The load_phase mode requires:
@@ -201,7 +201,7 @@ workflow {
     *
     * All scientific processes use tuple(meta, path) artifact contracts.
     */
-    
+
     } else if (params.mode == 'qc_phase_2') {
 
         if (!params.input_object) {
@@ -456,6 +456,7 @@ workflow {
             - qc_visualization_phase
             - doublet_phase
             - qc_scores_phase
+
             """.stripIndent()
         }
 }
