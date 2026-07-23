@@ -40,3 +40,7 @@ secrets/
 data/
 data_test/
 main_old.nf
+
+# Python cache
+__pycache__/
+*.pyc
