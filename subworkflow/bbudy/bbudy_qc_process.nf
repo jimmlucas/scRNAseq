@@ -5,6 +5,7 @@ include { RESOLVE_ANALYSIS_PLAN }   from '../../modules/control/resolve_analysis
 include { INPUT_DISCOVERY }         from '../../modules/control/input_discovery'
 include { RESOLVE_LOAD_CONFIG }      from '../../modules/control/resolve_load_config'
 include { LOAD_DATA }               from '../../modules/load'
+include { QC_METRICS }               from '../../modules/qc_metrics'
 
 workflow BBUDY_QC_PROCESS {
 
@@ -69,6 +70,13 @@ workflow BBUDY_QC_PROCESS {
         )
     )
 
+    qc_metrics_script_ch = Channel.value(
+        file(
+            "${projectDir}/scripts/01a_qc_metrics.R",
+            checkIfExists: true
+        )
+    )
+
     VALIDATE_ANALYSIS_PLAN(
         plan_artifact_ch,
         validation_script_ch
@@ -98,6 +106,12 @@ workflow BBUDY_QC_PROCESS {
         load_script_ch
     )
 
+    QC_METRICS(
+        LOAD_DATA.out.seurat_object,
+        RESOLVE_LOAD_CONFIG.out.load_config,
+        qc_metrics_script_ch
+    )
+
     emit:
 
     validated_plan = VALIDATE_ANALYSIS_PLAN.out.validated_plan
@@ -119,5 +133,11 @@ workflow BBUDY_QC_PROCESS {
     input_sample_summary = INPUT_DISCOVERY.out.sample_summary
     input_discovery_summary = INPUT_DISCOVERY.out.summary
     input_discovery_session_info = INPUT_DISCOVERY.out.session_info
+
+    qc_metrics_object = QC_METRICS.out.metrics_object
+    qc_metrics_summary = QC_METRICS.out.summary
+    qc_metrics_by_sample = QC_METRICS.out.by_sample
+    qc_metrics_cell_metadata = QC_METRICS.out.cell_metadata
+    qc_metrics_session_info = QC_METRICS.out.session_info
 
 }

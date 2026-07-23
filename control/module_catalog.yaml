@@ -71,6 +71,10 @@ artifact_types:
   session_info:
     description: Runtime, package and environment information.
 
+  qc_metrics_seurat:
+    description: >
+      Seurat object with QC metrics added while preserving all cells
+      and features from the loaded input object.
 
 modules:
 
@@ -175,6 +179,56 @@ modules:
       - DIFFERENTIAL_EXPRESSION
       - PATHWAY_ANALYSIS
 
+  QC_METRICS:
+    stage: qc
+    process_name: QC_METRICS
+    mode: bbudy_qc_process
+    script: scripts/01a_qc_metrics.R
+    runtime_config: analysis_plan.yaml
+
+    config_sections:
+      - project
+      - experiment
+      - inputs
+      - qc
+
+    input_artifacts:
+      - artifact_type: loaded_seurat
+        path: 00_load_data/seu.rds
+
+      - artifact_type: resolved_load_config
+        path: control/load_config/load_config.resolved.yaml
+
+    output_artifacts:
+      - artifact_type: qc_metrics_seurat
+        path: 01a_qc_metrics/seu_qc_metrics.rds
+
+      - artifact_type: metrics
+        path: 01a_qc_metrics/01a_qc_metrics_summary.csv
+
+      - artifact_type: per_sample_metrics
+        path: 01a_qc_metrics/01a_qc_metrics_by_sample.csv
+
+      - artifact_type: cell_metadata
+        path: 01a_qc_metrics/01a_qc_metrics_cell_metadata.csv
+
+      - artifact_type: session_info
+        path: 01a_qc_metrics/01a_sessionInfo.txt
+
+    checkpoint_after: PCC_QC_METRICS
+    resource_class: high_memory
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - QC_THRESHOLD_RESOLUTION
+      - QC_FILTER
+      - QC_VISUALIZATION
+      - QC_DOUBLET_DETECTION
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
 
   QC_FILTER:
     stage: qc
@@ -357,12 +411,6 @@ modules:
 
 
 future_modules:
-
-  QC_METRICS:
-    stage: qc
-    expected_input_artifact: loaded_seurat
-    expected_output_artifact: qc_metrics_seurat
-    checkpoint_after: PCC_QC_METRICS
 
   QC_THRESHOLD_RESOLUTION:
     stage: qc

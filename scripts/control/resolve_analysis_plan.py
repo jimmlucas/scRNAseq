@@ -40,7 +40,7 @@ ROUTING_TO_PIPELINE_MODULE = {
 MODULE_IMPLEMENTATION_STATE = {
     "INPUT_DISCOVERY": "available",
     "LOAD_DATA": "available",
-    "QC_METRICS": "planned",
+    "QC_METRICS": "available",
     "QC_VISUALIZATION": "legacy_available",
     "QC_THRESHOLD_RESOLUTION": "planned",
     "QC_FILTER": "legacy_available",
