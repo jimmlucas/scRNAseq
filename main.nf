@@ -7,6 +7,7 @@ include { LOAD_PHASE }             from './subworkflow/load_phase'
 include { BBUDY_QC_PROCESS }       from './subworkflow/bbudy/bbudy_qc_process'
 include { QC_THRESHOLD_APPROVAL_PHASE } from './subworkflow/bbudy/qc_threshold_approval_phase'
 include { QC_FILTER_POLICY_PHASE } from './subworkflow/bbudy/qc_filter_policy_phase'
+include { QC_VISUALIZATION_POLICY_PHASE } from './subworkflow/bbudy/qc_visualization_policy_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -175,6 +176,85 @@ workflow {
         QC_FILTER_POLICY_PHASE(
             scientific_meta_ch,
             qc_metrics_object_ch,
+            approved_policy_ch
+        )
+
+
+    /*
+     * MODE: qc_visualization_policy_phase
+     *
+     * Generate traceable before/after QC visualizations from
+     * previously published BBUDY artifacts.
+     */
+    } else if (
+        params.mode == 'qc_visualization_policy_phase'
+    ) {
+
+        if (!params.before_object) {
+            error """
+            The qc_visualization_policy_phase mode requires:
+
+            --before_object <path_to_qc_metrics_object.rds>
+            """.stripIndent()
+        }
+
+        if (!params.after_object) {
+            error """
+            The qc_visualization_policy_phase mode requires:
+
+            --after_object <path_to_filtered_object.rds>
+            """.stripIndent()
+        }
+
+        if (!params.cell_decisions) {
+            error """
+            The qc_visualization_policy_phase mode requires:
+
+            --cell_decisions <path_to_cell_decisions.csv>
+            """.stripIndent()
+        }
+
+        if (!params.approved_qc_threshold_policy) {
+            error """
+            The qc_visualization_policy_phase mode requires:
+
+            --approved_qc_threshold_policy <path_to_validated_policy.yaml>
+            """.stripIndent()
+        }
+
+        qc_metrics_object_ch = Channel.value(
+            file(
+                params.before_object,
+                checkIfExists: true
+            )
+        )
+
+        filtered_object_ch = Channel.value(
+            file(
+                params.after_object,
+                checkIfExists: true
+            )
+        )
+
+        cell_decisions_ch = Channel.value(
+            file(
+                params.cell_decisions,
+                checkIfExists: true
+            )
+        )
+
+        approved_policy_ch = Channel.value(
+            file(
+                params.approved_qc_threshold_policy,
+                checkIfExists: true
+            )
+        )
+
+        QC_VISUALIZATION_POLICY_PHASE(
+            scientific_meta_ch,
+            qc_metrics_object_ch,
+            filtered_object_ch,
+            cell_decisions_ch,
             approved_policy_ch
         )
 
@@ -561,6 +641,7 @@ workflow {
             - bbudy_qc_process
             - qc_threshold_approval_phase
             - qc_filter_policy_phase
+            - qc_visualization_policy_phase
             - qc_process
             - load_phase
             - qc_filter_phase

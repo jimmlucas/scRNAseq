@@ -436,6 +436,66 @@ modules:
       - PATHWAY_ANALYSIS
 
 
+  QC_VISUALIZATION_POLICY:
+    stage: qc
+    process_name: QC_VISUALIZATION_POLICY
+    mode: qc_visualization_policy_phase
+    script: scripts/01f_qc_visualization_policy.R
+    runtime_config: approved_qc_threshold_policy.yaml
+
+    config_sections:
+      - qc_threshold_policy
+
+    input_artifacts:
+      - artifact_type: qc_metrics_seurat
+        path: 01a_qc_metrics/seu_qc_metrics.rds
+
+      - artifact_type: qc_filtered_seurat
+        path: 01e_qc_filter_policy/seu_qc_filtered.rds
+
+      - artifact_type: cell_metadata
+        path: 01e_qc_filter_policy/01e_qc_filter_cell_decisions.csv
+
+      - artifact_type: approved_qc_threshold_policy
+        path: control/qc_threshold_approval/approved_qc_threshold_policy.yaml
+
+    output_artifacts:
+      - artifact_type: qc_visualization_summary
+        path: 01f_qc_visualization_policy/01f_qc_visualization_summary.csv
+
+      - artifact_type: qc_metric_distributions
+        path: 01f_qc_visualization_policy/01f_qc_metric_distributions.csv
+
+      - artifact_type: per_sample_metrics
+        path: 01f_qc_visualization_policy/01f_qc_by_sample_before_after.csv
+
+      - artifact_type: qc_sample_retention
+        path: 01f_qc_visualization_policy/01f_qc_sample_retention.csv
+
+      - artifact_type: qc_exclusion_reasons
+        path: 01f_qc_visualization_policy/01f_qc_exclusion_reasons.csv
+
+      - artifact_type: cell_metadata
+        path: 01f_qc_visualization_policy/01f_qc_cell_metadata_before_after.csv
+
+      - artifact_type: qc_visualization_report
+        path: 01f_qc_visualization_policy/01f_qc_*.png
+
+      - artifact_type: session_info
+        path: 01f_qc_visualization_policy/01f_sessionInfo.txt
+
+    checkpoint_after: PCC_QC_VISUALIZATION
+    resource_class: medium_memory
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - QC_DOUBLET_DETECTION
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
   QC_VISUALIZATION:
     stage: qc
     process_name: QC_VISUALIZATION
