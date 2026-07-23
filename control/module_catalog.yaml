@@ -1,0 +1,263 @@
+schema_version: "1.0"
+
+pipeline:
+  id: scrna_seq
+  name: scRNA-seq analysis pipeline
+
+artifact_types:
+  raw_inputs:
+    description: Input targets file and per-sample count directories.
+
+  loaded_seurat:
+    description: Merged Seurat object after loading input samples.
+
+  qc_filtered_seurat:
+    description: Seurat object after cell and gene QC filtering.
+
+  qc_visualization_report:
+    description: QC plots and per-cell/per-sample QC metadata.
+
+  singlet_seurat:
+    description: Seurat object after doublet detection policy has been applied.
+
+  qc_scored_seurat:
+    description: Seurat object after cell-cycle and dissociation scores have been added.
+
+modules:
+
+  LOAD_DATA:
+    stage: qc
+    process_name: LOAD_DATA
+    mode: load_phase
+    script: scripts/00-Loading_data.R
+    runtime_config: load_config.yaml
+    config_sections:
+      - project
+      - input
+      - output
+    input_artifacts:
+      - artifact_type: raw_inputs
+        source: config.input.targets
+      - artifact_type: raw_inputs
+        source: config.input.count_dir
+    output_artifacts:
+      - artifact_type: loaded_seurat
+        path: 00_load_data/seu.rds
+      - artifact_type: metrics
+        path: 00_load_data/00_load_data_summary.csv
+      - artifact_type: session_info
+        path: 00_load_data/00_sessionInfo.txt
+    checkpoint_after: PCC_LOAD_DATA
+    resource_class: high_memory
+    can_start_from: false
+    can_resume_from_output: true
+    invalidates:
+      - QC_FILTER
+      - QC_VISUALIZATION
+      - QC_DOUBLET_DETECTION
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+      - MARKERS
+      - ANNOTATION
+      - DIFFERENTIAL_EXPRESSION
+      - PATHWAY_ANALYSIS
+
+  QC_FILTER:
+    stage: qc
+    process_name: QC_FILTER
+    mode: qc_filter_phase
+    script: scripts/01_qc_filter.R
+    runtime_config: qc_filter_config.yaml
+    config_sections:
+      - project
+      - output
+      - qc
+    input_artifacts:
+      - artifact_type: loaded_seurat
+        path: 00_load_data/seu.rds
+    output_artifacts:
+      - artifact_type: qc_filtered_seurat
+        path: 01_qc_filter/seu_qc_filtered.rds
+      - artifact_type: metrics
+        path: 01_qc_filter/01_qc_summary.csv
+      - artifact_type: session_info
+        path: 01_qc_filter/01_sessionInfo.txt
+    checkpoint_after: PCC_QC_FILTER
+    resource_class: high_memory
+    can_start_from: true
+    can_resume_from_output: true
+    invalidates:
+      - QC_VISUALIZATION
+      - QC_DOUBLET_DETECTION
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+      - MARKERS
+      - ANNOTATION
+      - DIFFERENTIAL_EXPRESSION
+      - PATHWAY_ANALYSIS
+
+  QC_VISUALIZATION:
+    stage: qc
+    process_name: QC_VISUALIZATION
+    mode: qc_visualization_phase
+    script: scripts/01b_qc_visualization.R
+    runtime_config: qc_visualization_config.yaml
+    config_sections:
+      - project
+      - output
+    input_artifacts:
+      - artifact_type: qc_filtered_seurat
+        path: 01_qc_filter/seu_qc_filtered.rds
+    output_artifacts:
+      - artifact_type: qc_visualization_report
+        path: 01b_qc_visualization
+      - artifact_type: metrics
+        path: 01b_qc_visualization/01b_qc_summary.csv
+      - artifact_type: per_sample_metrics
+        path: 01b_qc_visualization/01b_qc_by_sample.csv
+      - artifact_type: per_group_metrics
+        path: 01b_qc_visualization/01b_qc_by_group.csv
+      - artifact_type: cell_metadata
+        path: 01b_qc_visualization/01b_qc_cell_metadata.csv
+      - artifact_type: session_info
+        path: 01b_qc_visualization/01b_sessionInfo.txt
+    checkpoint_after: PCC_PRE_DOUBLET
+    resource_class: medium_memory
+    can_start_from: true
+    can_resume_from_output: true
+    invalidates: []
+
+  QC_DOUBLET_DETECTION:
+    stage: qc
+    process_name: QC_DOUBLET_DETECTION
+    mode: doublet_phase
+    script: scripts/01c_doublet_detection.R
+    runtime_config: doublet_config.yaml
+    config_sections:
+      - project
+      - output
+      - doublet
+    input_artifacts:
+      - artifact_type: qc_filtered_seurat
+        path: 01_qc_filter/seu_qc_filtered.rds
+    output_artifacts:
+      - artifact_type: singlet_seurat
+        path: 01c_doublet_detection/seu_singlets.rds
+      - artifact_type: metrics
+        path: 01c_doublet_detection/01c_doublet_summary.csv
+      - artifact_type: per_sample_metrics
+        path: 01c_doublet_detection/01c_doublet_by_sample.csv
+      - artifact_type: cell_metadata
+        path: 01c_doublet_detection/01c_doublet_metadata.csv
+      - artifact_type: session_info
+        path: 01c_doublet_detection/01c_sessionInfo.txt
+    checkpoint_after: PCC_POST_DOUBLET
+    resource_class: very_high_memory
+    can_start_from: true
+    can_resume_from_output: true
+    invalidates:
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+      - MARKERS
+      - ANNOTATION
+      - DIFFERENTIAL_EXPRESSION
+      - PATHWAY_ANALYSIS
+
+  QC_SCORES:
+    stage: qc
+    process_name: QC_SCORES
+    mode: qc_scores_phase
+    script: scripts/01d_qc_scores.R
+    runtime_config: qc_scores_config.yaml
+    config_sections:
+      - project
+      - output
+      - scoring
+    input_artifacts:
+      - artifact_type: singlet_seurat
+        path: 01c_doublet_detection/seu_singlets.rds
+    output_artifacts:
+      - artifact_type: qc_scored_seurat
+        path: 01d_qc_scores/seu_qc_scored.rds
+      - artifact_type: metrics
+        path: 01d_qc_scores/01d_qc_scores_summary.csv
+      - artifact_type: phase_metrics
+        path: 01d_qc_scores/01d_cell_cycle_phase_summary.csv
+      - artifact_type: cell_metadata
+        path: 01d_qc_scores/01d_qc_scores_metadata.csv
+      - artifact_type: session_info
+        path: 01d_qc_scores/01d_sessionInfo.txt
+    checkpoint_after: PCC_QC_SCORES
+    resource_class: high_memory
+    can_start_from: true
+    can_resume_from_output: true
+    invalidates:
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+      - MARKERS
+      - ANNOTATION
+      - DIFFERENTIAL_EXPRESSION
+      - PATHWAY_ANALYSIS
+
+future_modules:
+
+  NORMALIZATION:
+    stage: preprocessing
+    expected_input_artifact: qc_scored_seurat
+    expected_output_artifact: normalized_seurat
+    checkpoint_after: PCC_NORMALIZATION
+
+  INTEGRATION:
+    stage: integration
+    expected_input_artifact: normalized_seurat
+    expected_output_artifact: integrated_seurat
+    checkpoint_after: PCC_INTEGRATION
+
+  CLUSTERING:
+    stage: clustering
+    expected_input_artifact: integrated_seurat
+    expected_output_artifact: clustered_seurat
+    checkpoint_after: PCC_CLUSTERING
+
+  CLUSTER_QC:
+    stage: clustering
+    expected_input_artifact: clustered_seurat
+    expected_output_artifact: cluster_qc_report
+    checkpoint_after: PCC_CLUSTER_QC
+
+  CLUSTER_REFINEMENT:
+    stage: clustering
+    expected_input_artifact: clustered_seurat
+    expected_output_artifact: cluster_filtered_seurat
+    checkpoint_after: PCC_CLUSTER_REFINEMENT
+
+  MARKERS:
+    stage: annotation
+    expected_input_artifact: clustered_seurat
+    expected_output_artifact: marker_table
+    checkpoint_after: PCC_MARKERS
+
+  ANNOTATION:
+    stage: annotation
+    expected_input_artifact: clustered_seurat
+    expected_output_artifact: annotated_seurat
+    checkpoint_after: PCC_ANNOTATION
+
+  DIFFERENTIAL_EXPRESSION:
+    stage: biological_analysis
+    expected_input_artifact: annotated_seurat
+    expected_output_artifact: differential_expression_results
+    checkpoint_after: PCC_DIFFERENTIAL_EXPRESSION
+
+  PATHWAY_ANALYSIS:
+    stage: biological_analysis
+    expected_input_artifact: differential_expression_results
+    expected_output_artifact: pathway_results
+    checkpoint_after: PCC_PATHWAY

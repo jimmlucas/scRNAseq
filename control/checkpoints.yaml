@@ -1,0 +1,355 @@
+schema_version: "1.1"
+
+pipeline:
+  id: scrna_seq
+  name: scRNA-seq analysis pipeline
+
+checkpoints:
+
+  - checkpoint_id: PCC_LOAD_DATA
+    name:
+      es: Control posterior a la carga de datos
+      en: Post-loading data checkpoint
+    position:
+      after_module: LOAD_DATA
+      before_module: QC_FILTER
+    blocking: true
+    automation_policy:
+      on_pass: continue
+      on_warning: ask_user
+      on_fail: stop
+    metrics:
+      - metric: loaded_samples_count
+        source: 00_load_data/00_load_data_summary.csv
+        derived:
+          operation: row_count
+        condition:
+          operator: ">="
+          threshold: 1
+        severity_on_failure: FAIL
+
+      - metric: loaded_cells_total
+        source: 00_load_data/00_load_data_summary.csv
+        derived:
+          operation: sum
+          column: cells
+        condition:
+          operator: ">="
+          threshold: 1
+        severity_on_failure: FAIL
+
+      - metric: loaded_genes_min
+        source: 00_load_data/00_load_data_summary.csv
+        derived:
+          operation: min
+          column: genes
+        condition:
+          operator: ">="
+          threshold: 200
+        severity_on_failure: WARNING
+
+    allowed_decisions:
+      - CONTINUE
+      - STOP_INVALID_INPUT
+      - REQUEST_INPUT_REVIEW
+
+    editable_parameters:
+      - path: input.targets
+        type: path
+        requires_user_approval: true
+      - path: input.count_dir
+        type: path
+        requires_user_approval: true
+
+
+  - checkpoint_id: PCC_QC_FILTER
+    name:
+      es: Control posterior al filtrado de calidad
+      en: Post-QC filtering checkpoint
+    position:
+      after_module: QC_FILTER
+      before_modules:
+        - QC_VISUALIZATION
+        - QC_DOUBLET_DETECTION
+    blocking: true
+    automation_policy:
+      on_pass: continue
+      on_warning: ask_user
+      on_fail: stop
+    metrics:
+      - metric: cells_after_filtering
+        source: 01_qc_filter/01_qc_summary.csv
+        condition:
+          operator: ">="
+          threshold: 1
+        severity_on_failure: FAIL
+
+      - metric: cell_retention_percent
+        source: 01_qc_filter/01_qc_summary.csv
+        derived: true
+        condition:
+          operator: ">="
+          threshold: 50
+        severity_on_failure: WARNING
+
+      - metric: genes_after_filtering
+        source: 01_qc_filter/01_qc_summary.csv
+        condition:
+          operator: ">="
+          threshold: 200
+        severity_on_failure: FAIL
+
+      - metric: median_percent_mito_after
+        source: 01_qc_filter/01_qc_summary.csv
+        condition:
+          operator: "<="
+          threshold: 20
+        severity_on_failure: WARNING
+        applies_when:
+          metric: cells_after_filtering
+          operator: ">"
+          threshold: 0
+
+    allowed_decisions:
+      - CONTINUE
+      - CONTINUE_WITH_WARNING
+      - STOP_AND_REVIEW_THRESHOLDS
+      - APPLY_PARAMETER_CHANGES_AND_RESUME
+
+    editable_parameters:
+      - path: qc.min_features
+        type: integer
+        minimum: 0
+        requires_user_approval: true
+      - path: qc.max_features
+        type: integer
+        minimum: 1
+        requires_user_approval: true
+      - path: qc.min_counts
+        type: integer
+        minimum: 0
+        requires_user_approval: true
+      - path: qc.max_counts
+        type: integer
+        minimum: 1
+        requires_user_approval: true
+      - path: qc.max_percent_mito
+        type: number
+        minimum: 0
+        maximum: 100
+        requires_user_approval: true
+      - path: qc.max_percent_ribo
+        type: number
+        minimum: 0
+        maximum: 100
+        requires_user_approval: true
+      - path: qc.max_percent_globin
+        type: number
+        minimum: 0
+        maximum: 100
+        requires_user_approval: true
+
+
+  - checkpoint_id: PCC_PRE_DOUBLET
+    name:
+      es: Control previo a la detección de doublets
+      en: Pre-doublet detection checkpoint
+    position:
+      after_module: QC_VISUALIZATION
+      before_module: QC_DOUBLET_DETECTION
+    blocking: false
+    automation_policy:
+      on_pass: continue
+      on_warning: ask_user
+      on_fail: ask_user
+    metrics:
+      - metric: samples_eligible_for_doublet_detection
+        source: 01b_qc_visualization/01b_qc_by_sample.csv
+        evaluation_mode: per_sample
+        value_column: cells
+        id_column: sample
+        derived:
+          operation: count_where
+          operator: ">="
+          threshold_from_config: doublet.min_cells
+        condition:
+          operator: ">="
+          threshold: 1
+        severity_on_failure: WARNING
+
+      - metric: samples_below_doublet_min_cells
+        source: 01b_qc_visualization/01b_qc_by_sample.csv
+        evaluation_mode: per_sample
+        value_column: cells
+        id_column: sample
+        derived:
+          operation: count_where
+          operator: "<"
+          threshold_from_config: doublet.min_cells
+        condition:
+          operator: "=="
+          threshold: 0
+        severity_on_failure: WARNING
+
+    allowed_decisions:
+      - RUN_DOUBLET_DETECTION
+      - SKIP_DOUBLET_DETECTION
+      - RUN_ONLY_ELIGIBLE_SAMPLES
+      - MODIFY_DOUBLET_PARAMETERS_AND_RESUME
+      - ASK_USER
+
+    editable_parameters:
+      - path: doublet.min_cells
+        type: integer
+        minimum: 1
+        requires_user_approval: true
+      - path: doublet.expected_rate
+        type: number
+        minimum: 0
+        maximum: 1
+        requires_user_approval: true
+      - path: doublet.pN
+        type: number
+        minimum: 0
+        maximum: 1
+        requires_user_approval: true
+      - path: doublet.pcs
+        type: integer
+        minimum: 1
+        requires_user_approval: true
+      - path: doublet.nfeatures
+        type: integer
+        minimum: 1
+        requires_user_approval: true
+
+
+  - checkpoint_id: PCC_POST_DOUBLET
+    name:
+      es: Control posterior a la detección de doublets
+      en: Post-doublet detection checkpoint
+    position:
+      after_module: QC_DOUBLET_DETECTION
+      before_module: QC_SCORES
+    blocking: false
+    automation_policy:
+      on_pass: continue
+      on_warning: ask_user
+      on_fail: ask_user
+    metrics:
+      - metric: doublet_detection_skipped_samples
+        source: 01c_doublet_detection/01c_doublet_by_sample.csv
+        derived:
+          operation: count_where
+          column: status
+          operator: "!="
+          value: completed
+        condition:
+          operator: "=="
+          threshold: 0
+        severity_on_failure: WARNING
+
+      - metric: doublets_removed
+        source: 01c_doublet_detection/01c_doublet_summary.csv
+        condition:
+          operator: ">="
+          threshold: 0
+        severity_on_failure: WARNING
+
+      - metric: cells_after_doublet_removal
+        source: 01c_doublet_detection/01c_doublet_summary.csv
+        condition:
+          operator: ">="
+          threshold: 1
+        severity_on_failure: FAIL
+
+    allowed_decisions:
+      - CONTINUE
+      - CONTINUE_WITH_WARNING
+      - REVIEW_DOUBLET_PARAMETERS
+      - REPEAT_DOUBLET_DETECTION
+      - SKIP_QC_SCORES
+      - STOP_FOR_MANUAL_REVIEW
+
+    editable_parameters:
+      - path: doublet.expected_rate
+        type: number
+        minimum: 0
+        maximum: 1
+        requires_user_approval: true
+      - path: doublet.pN
+        type: number
+        minimum: 0
+        maximum: 1
+        requires_user_approval: true
+      - path: doublet.pcs
+        type: integer
+        minimum: 1
+        requires_user_approval: true
+      - path: doublet.min_cells
+        type: integer
+        minimum: 1
+        requires_user_approval: true
+      - path: doublet.nfeatures
+        type: integer
+        minimum: 1
+        requires_user_approval: true
+
+
+  - checkpoint_id: PCC_QC_SCORES
+    name:
+      es: Control posterior al cálculo de scores
+      en: Post-QC scoring checkpoint
+    position:
+      after_module: QC_SCORES
+      before_module: NORMALIZATION
+    blocking: false
+    automation_policy:
+      on_pass: continue
+      on_warning: ask_user
+      on_fail: ask_user
+    metrics:
+      - metric: cells_with_qc_scores
+        source: 01d_qc_scores/01d_qc_scores_summary.csv
+        source_metric: cells
+        condition:
+          operator: ">="
+          threshold: 1
+        severity_on_failure: FAIL
+
+      - metric: s_genes_matched
+        source: 01d_qc_scores/01d_qc_scores_summary.csv
+        condition:
+          operator: ">="
+          threshold: 1
+        severity_on_failure: WARNING
+
+      - metric: g2m_genes_matched
+        source: 01d_qc_scores/01d_qc_scores_summary.csv
+        condition:
+          operator: ">="
+          threshold: 1
+        severity_on_failure: WARNING
+
+      - metric: dissociation_genes_matched
+        source: 01d_qc_scores/01d_qc_scores_summary.csv
+        condition:
+          operator: ">="
+          threshold: 1
+        severity_on_failure: WARNING
+
+      - metric: cell_cycle_phase_distribution
+        source: 01d_qc_scores/01d_cell_cycle_phase_summary.csv
+        evaluation_type: manual_review
+        severity_on_failure: WARNING
+
+    allowed_decisions:
+      - CONTINUE_TO_NORMALIZATION
+      - CONTINUE_WITH_WARNING
+      - REVIEW_SAMPLE_BIAS
+      - STOP_FOR_MANUAL_REVIEW
+
+    editable_parameters:
+      - path: scoring.scale_factor
+        type: integer
+        minimum: 1
+        requires_user_approval: true

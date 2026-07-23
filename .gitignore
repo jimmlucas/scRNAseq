@@ -1,0 +1,42 @@
+# Nextflow
+.nextflow*
+.nextflow/
+work/
+.nextflow.log*
+.nextflow.pid
+
+# Results
+results/
+results_test/
+output/
+outputs/
+
+# Scientific artifacts
+*.rds
+*.RData
+*.rda
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*~
+.DS_Store
+
+# IDE
+.Rproj.user/
+.vscode/
+.idea/
+
+# Local environment and credentials
+.env
+.env.*
+secrets/
+
+# R local history
+.Rhistory
+
+# Local datasets
+data/
+data_test/
+main_old.nf

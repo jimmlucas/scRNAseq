@@ -1,0 +1,205 @@
+schema_version: "1.0"
+
+parameters:
+
+  input.targets:
+    type: path
+    section: input
+    description: Path to the sample targets CSV file.
+    affects:
+      - LOAD_DATA
+    requires_user_approval: true
+
+  input.count_dir:
+    type: path
+    section: input
+    description: Directory containing per-sample count data.
+    affects:
+      - LOAD_DATA
+    requires_user_approval: true
+
+  qc.min_features:
+    type: integer
+    section: qc
+    minimum: 0
+    description: Minimum number of detected features required per cell.
+    affects:
+      - QC_FILTER
+    requires_user_approval: true
+
+  qc.max_features:
+    type: integer
+    section: qc
+    minimum: 1
+    description: Maximum number of detected features allowed per cell.
+    affects:
+      - QC_FILTER
+    requires_user_approval: true
+
+  qc.min_counts:
+    type: integer
+    section: qc
+    minimum: 0
+    description: Minimum number of counts required per cell.
+    affects:
+      - QC_FILTER
+    requires_user_approval: true
+
+  qc.max_counts:
+    type: integer
+    section: qc
+    minimum: 1
+    description: Maximum number of counts allowed per cell.
+    affects:
+      - QC_FILTER
+    requires_user_approval: true
+
+  qc.max_percent_mito:
+    type: number
+    section: qc
+    minimum: 0
+    maximum: 100
+    description: Maximum mitochondrial percentage allowed per cell.
+    affects:
+      - QC_FILTER
+    requires_user_approval: true
+
+  qc.max_percent_ribo:
+    type: number
+    section: qc
+    minimum: 0
+    maximum: 100
+    description: Maximum ribosomal percentage allowed per cell.
+    affects:
+      - QC_FILTER
+    requires_user_approval: true
+
+  qc.max_percent_globin:
+    type: number
+    section: qc
+    minimum: 0
+    maximum: 100
+    description: Maximum globin percentage allowed per cell.
+    affects:
+      - QC_FILTER
+    requires_user_approval: true
+
+  doublet.expected_rate:
+    type: number
+    section: doublet
+    minimum: 0
+    maximum: 1
+    description: Expected doublet rate used to estimate the number of doublets.
+    affects:
+      - QC_DOUBLET_DETECTION
+    requires_user_approval: true
+
+  doublet.pN:
+    type: number
+    section: doublet
+    minimum: 0
+    maximum: 1
+    description: DoubletFinder pN parameter.
+    affects:
+      - QC_DOUBLET_DETECTION
+    requires_user_approval: true
+
+  doublet.pcs:
+    type: integer
+    section: doublet
+    minimum: 1
+    description: Number of PCs used by DoubletFinder.
+    affects:
+      - QC_DOUBLET_DETECTION
+    requires_user_approval: true
+
+  doublet.min_cells:
+    type: integer
+    section: doublet
+    minimum: 1
+    description: Minimum cells required to run doublet detection for a sample.
+    affects:
+      - QC_DOUBLET_DETECTION
+    requires_user_approval: true
+
+  doublet.nfeatures:
+    type: integer
+    section: doublet
+    minimum: 1
+    description: Number of variable features used for doublet detection preprocessing.
+    affects:
+      - QC_DOUBLET_DETECTION
+    requires_user_approval: true
+
+  scoring.scale_factor:
+    type: integer
+    section: scoring
+    minimum: 1
+    description: Scale factor used during score-related normalization steps.
+    affects:
+      - QC_SCORES
+    requires_user_approval: true
+
+future_parameters:
+
+  normalization.method:
+    type: string
+    section: normalization
+    allowed_values:
+      - SCT
+      - LogNormalize
+    affects:
+      - NORMALIZATION
+    requires_user_approval: true
+
+  integration.method:
+    type: string
+    section: integration
+    allowed_values:
+      - Harmony
+      - Seurat
+      - FastMNN
+    affects:
+      - INTEGRATION
+    requires_user_approval: true
+
+  clustering.resolution:
+    type: number
+    section: clustering
+    minimum: 0
+    affects:
+      - CLUSTERING
+    requires_user_approval: true
+
+  cluster_filter.exclude_clusters:
+    type: list
+    section: cluster_filter
+    affects:
+      - CLUSTER_REFINEMENT
+    requires_user_approval: true
+
+  annotation.reference:
+    type: string
+    section: annotation
+    affects:
+      - ANNOTATION
+    requires_user_approval: true
+
+  differential_expression.contrast:
+    type: string
+    section: differential_expression
+    affects:
+      - DIFFERENTIAL_EXPRESSION
+    requires_user_approval: true
+
+  pathway.database:
+    type: string
+    section: pathway
+    allowed_values:
+      - GO
+      - KEGG
+      - Reactome
+      - MSigDB
+    affects:
+      - PATHWAY_ANALYSIS
+    requires_user_approval: true

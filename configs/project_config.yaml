@@ -1,0 +1,34 @@
+project:
+  name: "L13712"
+  organism: "mouse"
+  sample_column: "SampleName"
+  shortname_column: "ShortName"
+  group_column: "Group"
+
+input:
+  targets: "data/targets_r_L13696-L13712.csv"
+  count_dir: "data/count"
+
+output:
+  data_dir: "data"
+  results_dir: "results/L13712/00_load_data"
+  merged_object: "seu.rds"
+
+qc:
+  min_features: 1000
+  max_features: 100000
+  min_counts: 0
+  max_counts: 40000
+  max_percent_mito: 20
+  max_percent_ribo: 15
+  max_percent_globin: 0.1
+
+doublet:
+  expected_rate: 0.075
+  pN: 0.25
+  pcs: 15
+  min_cells: 500
+  nfeatures: 1500
+
+scoring:
+  scale_factor: 10000
