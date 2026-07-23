@@ -4,6 +4,7 @@ include { QC_PHASE_1 }             from './subworkflow/qc_phase_1'
 include { QC_PHASE_2 }             from './subworkflow/qc_phase_2'
 include { qc_process }             from './subworkflow/qc_process'
 include { LOAD_PHASE }             from './subworkflow/load_phase'
+include { BBUDY_QC_PROCESS }       from './subworkflow/bbudy/bbudy_qc_process'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -35,16 +36,43 @@ workflow {
 
     scientific_meta_ch = Channel.value(scientific_meta)
 
+    /*
+     * MODE: bbudy_qc_process
+     *
+     * New plan-driven QC orchestration.
+     *
+     * The analysis plan defines the experiment structure,
+     * enabled modules and decisions requiring approval.
+     */
+    
+    if (params.mode == 'bbudy_qc_process') {
+
+        if (!params.analysis_plan) {
+            error """
+            The bbudy_qc_process mode requires:
+
+            --analysis_plan <path_to_analysis_plan.yaml>
+            """.stripIndent()
+        }
+
+        analysis_plan_ch = Channel.value(
+            file(
+                params.analysis_plan,
+                checkIfExists: true
+            )
+        )
+
+        BBUDY_QC_PROCESS(
+            scientific_meta_ch,
+            analysis_plan_ch
+        )
+
 
     /*
      * MODE: load_phase
-     *
-     * Execute only:
-     *
-     * LOAD_DATA
      */
-    if (params.mode == 'load_phase') {
-
+    } else if (params.mode == 'load_phase') {
+        
         if (!params.load_config) {
             error """
             The load_phase mode requires:
@@ -64,7 +92,6 @@ workflow {
             scientific_meta_ch,
             load_config_ch
         )
-
 
     /*
      * MODE: qc_filter_phase
@@ -389,45 +416,46 @@ workflow {
      */
     } else if (params.mode == 'qc_process') {
 
-    if (!params.config_file) {
-        error """
-        The qc_process mode requires:
+        if (!params.config_file) {
+            error """
+            The qc_process mode requires:
 
-        --config_file <path_to_config.yaml>
-        """.stripIndent()
-    }
+            --config_file <path_to_config.yaml>
+            """.stripIndent()
+        }
 
-    config_ch = Channel.value(
-        file(
-            params.config_file,
-            checkIfExists: true
+        config_ch = Channel.value(
+            file(
+                params.config_file,
+                checkIfExists: true
+            )
         )
-    )
 
-    qc_process(
-        scientific_meta_ch,
-        config_ch
-    )
+        qc_process(
+            scientific_meta_ch,
+            config_ch
+        )
 
 
-    /*
-     * Invalid execution mode.
-     */
-    } else {
+        /*
+        * Invalid execution mode.
+        */
+        } else {
 
-        error """
-        Invalid mode: ${params.mode}
+            error """
+            Invalid mode: ${params.mode}
 
-        Available modes:
+            Available modes:
 
-          - qc_process
-          - load_phase
-          - qc_filter_phase
-          - qc_phase_1
-          - qc_phase_2
-          - qc_visualization_phase
-          - doublet_phase
-          - qc_scores_phase
-        """.stripIndent()
-    }
+            - bbudy_qc_process
+            - qc_process
+            - load_phase
+            - qc_filter_phase
+            - qc_phase_1
+            - qc_phase_2
+            - qc_visualization_phase
+            - doublet_phase
+            - qc_scores_phase
+            """.stripIndent()
+        }
 }

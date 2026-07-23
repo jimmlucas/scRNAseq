@@ -1,0 +1,61 @@
+schema_version: "1.0"
+
+required_sections:
+  - plan
+  - experiment
+  - inputs
+  - routing
+  - qc
+
+allowed_values:
+
+  experiment_type:
+    - scRNAseq
+    - snRNAseq
+    - CITEseq
+    - multiome
+    - spatial
+    - unknown
+
+  material:
+    - cells
+    - nuclei
+    - mixed
+    - unknown
+
+  organism:
+    - human
+    - mouse
+    - other
+    - unknown
+
+  matrix_type:
+    - raw
+    - filtered
+    - seurat_object
+    - single_cell_experiment
+    - unknown
+
+  threshold_mode:
+    - fixed
+    - adaptive
+    - hybrid
+    - manual
+
+  approval_policy:
+    - automatic
+    - review
+    - required
+
+routing_modules:
+  - input_discovery
+  - load_data
+  - qc_metrics
+  - qc_visualization
+  - qc_threshold_resolution
+  - qc_filter
+  - doublet_detection
+  - sample_resolution
+  - merge_samples
+  - qc_scores
+  - normalization

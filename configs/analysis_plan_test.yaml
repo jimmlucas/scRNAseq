@@ -1,0 +1,61 @@
+plan:
+  schema_version: "1.0"
+  plan_id: "L13712_QC_PLAN_001"
+  generated_by: "manual"
+  approval_status: "approved"
+
+experiment:
+  project_id: "M15214_TEST"
+  biological_run_id: "L13712_TEST"
+
+  experiment_type: "scRNAseq"
+  material: "cells"
+  organism: "mouse"
+  tissue: "heart"
+  platform: "BD_Rhapsody"
+
+  modalities:
+    - "RNA"
+
+inputs:
+  matrix_type: "seurat_object"
+  load_config: "configs/project_config_test.yaml"
+
+  sample_column: "SampleName"
+  biological_sample_column: "SampleName"
+  group_column: "Group"
+
+  run_column: null
+  lane_column: null
+  replicate_column: null
+
+routing:
+  input_discovery: true
+  load_data: true
+  qc_metrics: true
+  qc_visualization: false
+  qc_threshold_resolution: false
+  qc_filter: false
+  doublet_detection: false
+  sample_resolution: false
+  merge_samples: false
+  qc_scores: false
+  normalization: false
+
+qc:
+  threshold_mode: "hybrid"
+
+  metrics:
+    rna: true
+    mitochondrial: true
+    ribosomal: true
+    globin: true
+    complexity: true
+
+    adt: false
+    hto: false
+    vdj: false
+
+  approval_policy:
+    thresholds: "required"
+    sample_resolution: "required"
