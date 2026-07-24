@@ -9,6 +9,7 @@ include { QC_THRESHOLD_APPROVAL_PHASE } from './subworkflow/bbudy/qc_threshold_a
 include { QC_FILTER_POLICY_PHASE } from './subworkflow/bbudy/qc_filter_policy_phase'
 include { QC_VISUALIZATION_POLICY_PHASE } from './subworkflow/bbudy/qc_visualization_policy_phase'
 include { DOUBLET_DETECTION_SCORING_PHASE } from './subworkflow/bbudy/doublet_detection_scoring_phase'
+include { DOUBLET_POLICY_RESOLUTION_PHASE } from './subworkflow/bbudy/doublet_policy_resolution_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -304,6 +305,70 @@ workflow {
             scientific_meta_ch,
             filtered_object_ch,
             doublet_config_ch
+        )
+
+
+    /*
+     * MODE: doublet_policy_resolution_phase
+     *
+     * Resolve a proposed human-reviewable doublet policy from
+     * technical doublet scoring outputs. This mode does not modify
+     * Seurat objects and does not approve filtering decisions.
+     */
+    } else if (
+        params.mode == 'doublet_policy_resolution_phase'
+    ) {
+
+        if (!params.doublet_summary) {
+            error """
+            The doublet_policy_resolution_phase mode requires:
+
+            --doublet_summary <path_to_01g_doublet_detection_summary.csv>
+            """.stripIndent()
+        }
+
+        if (!params.doublet_by_sample) {
+            error """
+            The doublet_policy_resolution_phase mode requires:
+
+            --doublet_by_sample <path_to_01g_doublet_detection_by_sample.csv>
+            """.stripIndent()
+        }
+
+        if (!params.doublet_cell_scores) {
+            error """
+            The doublet_policy_resolution_phase mode requires:
+
+            --doublet_cell_scores <path_to_01g_doublet_detection_cell_scores.csv>
+            """.stripIndent()
+        }
+
+        doublet_summary_ch = Channel.value(
+            file(
+                params.doublet_summary,
+                checkIfExists: true
+            )
+        )
+
+        doublet_by_sample_ch = Channel.value(
+            file(
+                params.doublet_by_sample,
+                checkIfExists: true
+            )
+        )
+
+        doublet_cell_scores_ch = Channel.value(
+            file(
+                params.doublet_cell_scores,
+                checkIfExists: true
+            )
+        )
+
+        DOUBLET_POLICY_RESOLUTION_PHASE(
+            scientific_meta_ch,
+            doublet_summary_ch,
+            doublet_by_sample_ch,
+            doublet_cell_scores_ch
         )
 
 

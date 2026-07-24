@@ -58,6 +58,11 @@ artifact_types:
       Proposed or approved policy describing which doublet classifications
       may be applied during a later filtering step.
 
+  doublet_policy_resolution:
+    description: >
+      Summary describing how a proposed doublet policy was resolved from
+      technical doublet scoring outputs.
+
   qc_scored_seurat:
     description: >
       Seurat object after cell-cycle and dissociation scores have
@@ -636,6 +641,51 @@ modules:
 
     invalidates:
       - DOUBLET_POLICY_RESOLUTION
+      - DOUBLET_FILTER
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
+  DOUBLET_POLICY_RESOLUTION:
+    stage: qc_control
+    process_name: DOUBLET_POLICY_RESOLUTION
+    mode: doublet_policy_resolution_phase
+    script: scripts/control/resolve_doublet_policy.py
+    runtime_config: doublet_scoring_outputs
+
+    config_sections:
+      - doublet_scoring
+
+    input_artifacts:
+      - artifact_type: metrics
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_summary.csv
+
+      - artifact_type: per_sample_metrics
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_by_sample.csv
+
+      - artifact_type: cell_metadata
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_cell_scores.csv
+
+    output_artifacts:
+      - artifact_type: doublet_detection_policy
+        path: control/doublet_policy/doublet_policy.yaml
+
+      - artifact_type: doublet_detection_policy
+        path: control/doublet_policy/doublet_policy.tsv
+
+      - artifact_type: doublet_policy_resolution
+        path: control/doublet_policy/doublet_policy_resolution.summary.tsv
+
+      - artifact_type: session_info
+        path: control/doublet_policy/doublet_policy_resolution.session.txt
+
+    checkpoint_after: PCC_DOUBLET_POLICY_PROPOSED
+    resource_class: lightweight
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
       - DOUBLET_FILTER
       - QC_SCORES
       - NORMALIZATION
