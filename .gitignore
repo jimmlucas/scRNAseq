@@ -44,3 +44,5 @@ main_old.nf
 # Python cache
 __pycache__/
 *.pyc
+
+results_test_ghcr/
