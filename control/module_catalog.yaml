@@ -48,6 +48,16 @@ artifact_types:
       Seurat object after the doublet-detection policy has been
       applied.
 
+  doublet_scored_seurat:
+    description: >
+      Seurat object after per-sample doublet scoring has been added.
+      This artifact preserves all cells and is not an approved filter.
+
+  doublet_detection_policy:
+    description: >
+      Proposed or approved policy describing which doublet classifications
+      may be applied during a later filtering step.
+
   qc_scored_seurat:
     description: >
       Seurat object after cell-cycle and dissociation scores have
@@ -583,6 +593,54 @@ modules:
       - ANNOTATION
       - DIFFERENTIAL_EXPRESSION
       - PATHWAY_ANALYSIS
+
+  DOUBLET_DETECTION_SCORING:
+    stage: qc
+    process_name: DOUBLET_DETECTION_SCORING
+    mode: doublet_detection_scoring_phase
+    script: scripts/01g_doublet_detection_scoring.R
+    runtime_config: doublet_config.yaml
+
+    config_sections:
+      - project
+      - output
+      - doublet
+
+    input_artifacts:
+      - artifact_type: qc_filtered_seurat
+        path: 01e_qc_filter_policy/seu_qc_filtered.rds
+
+    output_artifacts:
+      - artifact_type: doublet_scored_seurat
+        path: 01g_doublet_detection_scoring/seu_doublet_scored.rds
+
+      - artifact_type: metrics
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_summary.csv
+
+      - artifact_type: per_sample_metrics
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_by_sample.csv
+
+      - artifact_type: cell_metadata
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_cell_scores.csv
+
+      - artifact_type: metrics
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_pk_sweep.csv
+
+      - artifact_type: session_info
+        path: 01g_doublet_detection_scoring/01g_sessionInfo.txt
+
+    checkpoint_after: PCC_DOUBLET_DETECTION_SCORED
+    resource_class: very_high_memory
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - DOUBLET_POLICY_RESOLUTION
+      - DOUBLET_FILTER
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
 
 
   QC_SCORES:

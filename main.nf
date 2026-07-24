@@ -8,6 +8,7 @@ include { BBUDY_QC_PROCESS }       from './subworkflow/bbudy/bbudy_qc_process'
 include { QC_THRESHOLD_APPROVAL_PHASE } from './subworkflow/bbudy/qc_threshold_approval_phase'
 include { QC_FILTER_POLICY_PHASE } from './subworkflow/bbudy/qc_filter_policy_phase'
 include { QC_VISUALIZATION_POLICY_PHASE } from './subworkflow/bbudy/qc_visualization_policy_phase'
+include { DOUBLET_DETECTION_SCORING_PHASE } from './subworkflow/bbudy/doublet_detection_scoring_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -256,6 +257,53 @@ workflow {
             filtered_object_ch,
             cell_decisions_ch,
             approved_policy_ch
+        )
+
+
+    /*
+     * MODE: doublet_detection_scoring_phase
+     *
+     * Score doublet evidence from a QC-filtered object without removing
+     * cells. Scientific filtering remains a separate approved policy step.
+     */
+    } else if (
+        params.mode == 'doublet_detection_scoring_phase'
+    ) {
+
+        if (!params.input_object) {
+            error """
+            The doublet_detection_scoring_phase mode requires:
+
+            --input_object <path_to_qc_filtered_object.rds>
+            """.stripIndent()
+        }
+
+        if (!params.doublet_config) {
+            error """
+            The doublet_detection_scoring_phase mode requires:
+
+            --doublet_config <path_to_doublet_config.yaml>
+            """.stripIndent()
+        }
+
+        filtered_object_ch = Channel.value(
+            file(
+                params.input_object,
+                checkIfExists: true
+            )
+        )
+
+        doublet_config_ch = Channel.value(
+            file(
+                params.doublet_config,
+                checkIfExists: true
+            )
+        )
+
+        DOUBLET_DETECTION_SCORING_PHASE(
+            scientific_meta_ch,
+            filtered_object_ch,
+            doublet_config_ch
         )
 
 
