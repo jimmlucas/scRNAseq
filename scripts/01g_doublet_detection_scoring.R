@@ -231,22 +231,109 @@ safe_scale_and_pca <- function(obj, npcs, nfeatures) {
 }
 
 select_best_pk <- function(sweep_stats) {
-  bcmvn <- findPK_fun(sweep_stats)
+  bcmvn_raw <- findPK_fun(sweep_stats)
 
-  bcmvn$pK_numeric <- as.numeric(as.character(bcmvn$pK))
-  bcmvn$BCmetric <- as.numeric(as.character(bcmvn$BCmetric))
-
-  bcmvn <- bcmvn %>%
-    dplyr::filter(!is.na(pK_numeric), !is.na(BCmetric))
-
-  if (nrow(bcmvn) == 0) {
-    stop("No valid pK values found by DoubletFinder.")
+  if (is.null(bcmvn_raw)) {
+    stop(
+      "DoubletFinder find.pK returned NULL instead of a BCmvn table."
+    )
   }
 
-  best_row <- bcmvn[which.max(bcmvn$BCmetric), ]
+  bcmvn <- as.data.frame(
+    bcmvn_raw,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+
+  if (nrow(bcmvn) == 0) {
+    stop("DoubletFinder returned an empty BCmvn table.")
+  }
+
+  colnames(bcmvn) <- make.unique(colnames(bcmvn))
+
+  pk_index <- grep(
+    "^pK($|\\.)",
+    colnames(bcmvn)
+  )
+
+  bc_index <- grep(
+    "^BCmetric($|\\.)",
+    colnames(bcmvn)
+  )
+
+  if (length(pk_index) == 0) {
+    stop(
+      "Column pK not found in BCmvn table. Available columns: ",
+      paste(colnames(bcmvn), collapse = ", ")
+    )
+  }
+
+  if (length(bc_index) == 0) {
+    stop(
+      "Column BCmetric not found in BCmvn table. Available columns: ",
+      paste(colnames(bcmvn), collapse = ", ")
+    )
+  }
+
+  pK_numeric <- suppressWarnings(
+    as.numeric(
+      as.character(
+        bcmvn[[pk_index[[1]]]]
+      )
+    )
+  )
+
+  BCmetric_numeric <- suppressWarnings(
+    as.numeric(
+      as.character(
+        bcmvn[[bc_index[[1]]]]
+      )
+    )
+  )
+
+  valid_indices <- which(
+    !is.na(pK_numeric) &
+      is.finite(pK_numeric) &
+      !is.na(BCmetric_numeric) &
+      is.finite(BCmetric_numeric)
+  )
+
+  if (length(valid_indices) == 0) {
+    stop(
+      "No valid numeric pK and BCmetric combinations found."
+    )
+  }
+
+  best_index <- valid_indices[
+    which.max(
+      BCmetric_numeric[valid_indices]
+    )
+  ]
+
+  best_pk <- as.numeric(
+    pK_numeric[[best_index]]
+  )
+
+  if (
+    length(best_pk) != 1 ||
+      is.na(best_pk) ||
+      !is.finite(best_pk)
+  ) {
+    stop("Selected pK is not a valid numeric scalar.")
+  }
+
+  bcmvn$pK_numeric <- pK_numeric
+  bcmvn$BCmetric_numeric <- BCmetric_numeric
+
+  message(
+    "Selected pK: ",
+    best_pk,
+    " | BCmetric: ",
+    BCmetric_numeric[[best_index]]
+  )
 
   list(
-    best_pk = best_row$pK_numeric,
+    best_pk = best_pk,
     bcmvn = bcmvn
   )
 }
@@ -335,7 +422,7 @@ run_doubletfinder_one_sample <- function(
     pN,
     min_cells,
     nfeatures,
-    reuse_pANN = FALSE
+    reuse_pANN = NULL
 ) {
   message_step(paste0("Scoring sample: ", sample_id))
 
@@ -422,6 +509,22 @@ run_doubletfinder_one_sample <- function(
 
   pk_res <- select_best_pk(sweep_stats)
   best_pk <- pk_res$best_pk
+
+  if (
+    !is.numeric(best_pk) ||
+      length(best_pk) != 1 ||
+      is.na(best_pk) ||
+      !is.finite(best_pk)
+  ) {
+    stop(
+      "Invalid pK selected for sample ",
+      sample_id,
+      ": expected one finite numeric value."
+    )
+  }
+
+  best_pk <- as.numeric(best_pk)
+
   bcmvn <- pk_res$bcmvn
   bcmvn$sample <- sample_id
 
@@ -597,7 +700,7 @@ results <- lapply(
   pN = pN,
   min_cells = min_cells,
   nfeatures = nfeatures,
-  reuse_pANN = FALSE
+  reuse_pANN = NULL
 )
 
 doublet_metadata <- dplyr::bind_rows(

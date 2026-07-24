@@ -8,6 +8,6 @@ project:
 doublet:
   expected_rate: 0.075
   pN: 0.25
-  pcs: 5
-  min_cells: 999999
-  nfeatures: 500
+  pcs: 10
+  min_cells: 50
+  nfeatures: 1000
