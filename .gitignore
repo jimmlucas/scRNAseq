@@ -46,3 +46,7 @@ __pycache__/
 *.pyc
 
 results_test_ghcr/
+
+results_test_repro/
+
+!tests/doublet_scoring/fixtures/seu_qc_filtered.rds
