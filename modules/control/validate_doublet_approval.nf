@@ -93,6 +93,7 @@ process VALIDATE_DOUBLET_APPROVAL {
           detection_status: "completed"
           decision_status: "approved"
           proposed_action: "exclude_algorithmic_doublets"
+          application_action: "remove_proposed_doublets"
           cells_scored: 1
           proposed_doublet_count: 1
           proposed_singlet_count: 0

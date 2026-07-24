@@ -34,6 +34,19 @@ ALLOWED_ACTIONS = {
     "no_filter_no_doublets_detected",
 }
 
+ALLOWED_APPLICATION_ACTIONS = {
+    "remove_proposed_doublets",
+    "keep_all",
+    "exclude_sample_from_filtering",
+}
+
+PROPOSED_TO_APPLICATION_ACTION = {
+    "exclude_algorithmic_doublets": "remove_proposed_doublets",
+    "keep_all_cells": "keep_all",
+    "no_filter_no_doublets_detected": "keep_all",
+    "no_filter_not_run": "exclude_sample_from_filtering",
+}
+
 VALIDATOR_NAME = "validate_doublet_approval.py"
 
 
@@ -458,6 +471,19 @@ def validate_samples(
                 f"{proposed_action!r}"
             )
 
+        application_action = str(
+            sample_policy.get(
+                "application_action",
+                PROPOSED_TO_APPLICATION_ACTION[proposed_action],
+            )
+        ).strip()
+
+        if application_action not in ALLOWED_APPLICATION_ACTIONS:
+            raise ValueError(
+                f"samples.{sample}.application_action is not supported: "
+                f"{application_action!r}"
+            )
+
         cells_scored = parse_int(
             sample_policy.get("cells_scored"),
             f"samples.{sample}.cells_scored",
@@ -482,7 +508,7 @@ def validate_samples(
             )
 
         if (
-            proposed_action == "exclude_algorithmic_doublets"
+            application_action == "remove_proposed_doublets"
             and detection_status != "completed"
         ):
             raise ValueError(
@@ -491,7 +517,7 @@ def validate_samples(
             )
 
         if (
-            proposed_action == "exclude_algorithmic_doublets"
+            application_action == "remove_proposed_doublets"
             and proposed_doublets <= 0
         ):
             raise ValueError(
@@ -513,6 +539,7 @@ def validate_samples(
         canonical_sample["detection_status"] = detection_status
         canonical_sample["decision_status"] = decision_status
         canonical_sample["proposed_action"] = proposed_action
+        canonical_sample["application_action"] = application_action
         canonical_sample["cells_scored"] = cells_scored
         canonical_sample["proposed_doublet_count"] = proposed_doublets
         canonical_sample["proposed_singlet_count"] = proposed_singlets

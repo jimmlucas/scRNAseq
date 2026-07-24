@@ -177,6 +177,7 @@ assert policy["application"]["filtering_applied"] is False
 assert int(policy["application"]["cells_removed"]) == 0
 
 sample = policy["samples"]["wta-1"]
+assert sample["application_action"] == "remove_proposed_doublets"
 assert int(sample["cells_scored"]) == 199
 assert int(sample["proposed_doublet_count"]) == 15
 assert int(sample["proposed_singlet_count"]) == 184

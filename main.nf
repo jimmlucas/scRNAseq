@@ -11,6 +11,7 @@ include { QC_VISUALIZATION_POLICY_PHASE } from './subworkflow/bbudy/qc_visualiza
 include { DOUBLET_DETECTION_SCORING_PHASE } from './subworkflow/bbudy/doublet_detection_scoring_phase'
 include { DOUBLET_POLICY_RESOLUTION_PHASE } from './subworkflow/bbudy/doublet_policy_resolution_phase'
 include { DOUBLET_APPROVAL_PHASE } from './subworkflow/bbudy/doublet_approval_phase'
+include { DOUBLET_FILTER_PHASE } from './subworkflow/bbudy/doublet_filter_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -437,6 +438,53 @@ workflow {
 
 
     /*
+     * MODE: doublet_filter_phase
+     *
+     * Apply a human-approved and technically validated doublet
+     * policy to an existing doublet-scored Seurat artifact.
+     */
+    } else if (
+        params.mode == 'doublet_filter_phase'
+    ) {
+
+        if (!params.input_object) {
+            error """
+            The doublet_filter_phase mode requires:
+
+            --input_object <path_to_seu_doublet_scored.rds>
+            """.stripIndent()
+        }
+
+        if (!params.approved_doublet_policy) {
+            error """
+            The doublet_filter_phase mode requires:
+
+            --approved_doublet_policy <path_to_approved_doublet_policy.yaml>
+            """.stripIndent()
+        }
+
+        scored_object_ch = Channel.value(
+            file(
+                params.input_object,
+                checkIfExists: true
+            )
+        )
+
+        approved_policy_ch = Channel.value(
+            file(
+                params.approved_doublet_policy,
+                checkIfExists: true
+            )
+        )
+
+        DOUBLET_FILTER_PHASE(
+            scientific_meta_ch,
+            scored_object_ch,
+            approved_policy_ch
+        )
+
+
+    /*
      * MODE: load_phase
      */
     } else if (params.mode == 'load_phase') {
@@ -820,6 +868,7 @@ workflow {
             - qc_filter_policy_phase
             - qc_visualization_policy_phase
             - doublet_approval_phase
+            - doublet_filter_phase
             - qc_process
             - load_phase
             - qc_filter_phase

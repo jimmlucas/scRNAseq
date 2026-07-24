@@ -26,6 +26,7 @@ doublet_policy:
       detection_status: "completed"
       decision_status: "approved"
       proposed_action: "exclude_algorithmic_doublets"
+      application_action: "remove_proposed_doublets"
       cells_scored: 199
       proposed_doublet_count: 15
       proposed_singlet_count: 184
@@ -44,6 +45,7 @@ doublet_policy:
       detection_status: "completed"
       decision_status: "approved"
       proposed_action: "exclude_algorithmic_doublets"
+      application_action: "remove_proposed_doublets"
       cells_scored: 193
       proposed_doublet_count: 14
       proposed_singlet_count: 179
