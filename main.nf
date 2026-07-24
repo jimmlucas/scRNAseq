@@ -10,6 +10,7 @@ include { QC_FILTER_POLICY_PHASE } from './subworkflow/bbudy/qc_filter_policy_ph
 include { QC_VISUALIZATION_POLICY_PHASE } from './subworkflow/bbudy/qc_visualization_policy_phase'
 include { DOUBLET_DETECTION_SCORING_PHASE } from './subworkflow/bbudy/doublet_detection_scoring_phase'
 include { DOUBLET_POLICY_RESOLUTION_PHASE } from './subworkflow/bbudy/doublet_policy_resolution_phase'
+include { DOUBLET_APPROVAL_PHASE } from './subworkflow/bbudy/doublet_approval_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -369,6 +370,69 @@ workflow {
             doublet_summary_ch,
             doublet_by_sample_ch,
             doublet_cell_scores_ch
+        )
+
+
+    /*
+     * MODE: doublet_approval_phase
+     *
+     * Validate a human-reviewed doublet policy before it can be
+     * consumed by a future DOUBLET_FILTER step.
+     */
+    } else if (
+        params.mode == 'doublet_approval_phase'
+    ) {
+
+        if (!params.analysis_plan) {
+            error """
+            The doublet_approval_phase mode requires:
+
+            --analysis_plan <path_to_analysis_plan.yaml>
+            """.stripIndent()
+        }
+
+        if (!params.approved_doublet_policy) {
+            error """
+            The doublet_approval_phase mode requires:
+
+            --approved_doublet_policy <path_to_reviewed_doublet_policy.yaml>
+            """.stripIndent()
+        }
+
+        reviewed_plan = file(
+            params.analysis_plan,
+            checkIfExists: true
+        )
+
+        reviewed_policy = file(
+            params.approved_doublet_policy,
+            checkIfExists: true
+        )
+
+        plan_artifact_ch = Channel.value(
+            tuple(
+                scientific_meta + [
+                    stage         : 'analysis_plan',
+                    artifact_type : 'analysis_plan_yaml'
+                ],
+                reviewed_plan
+            )
+        )
+
+        reviewed_policy_artifact_ch = Channel.value(
+            tuple(
+                scientific_meta + [
+                    stage           : 'doublet_policy_review',
+                    artifact_type   : 'doublet_detection_policy',
+                    approval_status : 'human_reviewed'
+                ],
+                reviewed_policy
+            )
+        )
+
+        DOUBLET_APPROVAL_PHASE(
+            plan_artifact_ch,
+            reviewed_policy_artifact_ch
         )
 
 
@@ -755,6 +819,7 @@ workflow {
             - qc_threshold_approval_phase
             - qc_filter_policy_phase
             - qc_visualization_policy_phase
+            - doublet_approval_phase
             - qc_process
             - load_phase
             - qc_filter_phase

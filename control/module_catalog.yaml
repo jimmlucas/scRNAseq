@@ -63,6 +63,15 @@ artifact_types:
       Summary describing how a proposed doublet policy was resolved from
       technical doublet scoring outputs.
 
+  approved_doublet_policy:
+    description: >
+      Human-reviewed doublet policy validated for use by DOUBLET_FILTER.
+
+  doublet_policy_approval_summary:
+    description: >
+      Validation record containing reviewer identity, approval status,
+      timestamp and approved doublet counts.
+
   qc_scored_seurat:
     description: >
       Seurat object after cell-cycle and dissociation scores have
@@ -681,6 +690,45 @@ modules:
         path: control/doublet_policy/doublet_policy_resolution.session.txt
 
     checkpoint_after: PCC_DOUBLET_POLICY_PROPOSED
+    resource_class: lightweight
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - DOUBLET_FILTER
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
+  VALIDATE_DOUBLET_APPROVAL:
+    stage: qc_control
+    process_name: VALIDATE_DOUBLET_APPROVAL
+    mode: doublet_approval_phase
+    script: scripts/control/validate_doublet_approval.py
+    runtime_config: approved_doublet_policy.yaml
+
+    config_sections:
+      - doublet_policy
+
+    input_artifacts:
+      - artifact_type: analysis_plan_yaml
+        source: validated_analysis_plan
+
+      - artifact_type: doublet_detection_policy
+        path: control/doublet_policy/doublet_policy.yaml
+
+    output_artifacts:
+      - artifact_type: approved_doublet_policy
+        path: control/doublet_policy_approval/approved_doublet_policy.yaml
+
+      - artifact_type: doublet_policy_approval_summary
+        path: control/doublet_policy_approval/doublet_policy_approval.summary.tsv
+
+      - artifact_type: session_info
+        path: control/doublet_policy_approval/doublet_policy_approval.session.txt
+
+    checkpoint_after: PCC_DOUBLET_POLICY_APPROVED
     resource_class: lightweight
     can_start_from: true
     can_resume_from_output: true

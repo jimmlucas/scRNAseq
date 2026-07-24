@@ -1,0 +1,65 @@
+doublet_policy:
+  schema_version: "1.0"
+  identity:
+    project_id: "M15214_TEST"
+    project_name: "CART_scRNAseq_TEST"
+    biological_run_id: "L13712_TEST"
+  method:
+    name: "DoubletFinder"
+    source_artifact: "seu_doublet_scored.rds"
+    source_summary: "01g_doublet_detection_summary.csv"
+    source_by_sample: "01g_doublet_detection_by_sample.csv"
+    source_cell_scores: "01g_doublet_detection_cell_scores.csv"
+  application_semantics:
+    scope: "per_sample"
+    proposed_doublet_class: "Doublet"
+    not_run_action: "do_not_filter"
+    missing_cell_action: "error"
+    approval_required_before_filtering: true
+  summary:
+    cells_scored: 392
+    samples: 2
+    proposed_doublets: 29
+    cells_removed_by_scoring: 0
+  samples:
+    wta-1:
+      detection_status: "completed"
+      decision_status: "approved"
+      proposed_action: "exclude_algorithmic_doublets"
+      cells_scored: 199
+      proposed_doublet_count: 15
+      proposed_singlet_count: 184
+      expected_doublet_rate: 0.075
+      pN: 0.25
+      pK: 0.3
+      nExp_raw: 15
+      homotypic_prop: 0.0
+      nExp_adjusted: 15
+      cell_class_counts:
+        Doublet: 15
+        Singlet: 184
+        NotRun: 0
+        Other: 0
+    wta-5:
+      detection_status: "completed"
+      decision_status: "approved"
+      proposed_action: "exclude_algorithmic_doublets"
+      cells_scored: 193
+      proposed_doublet_count: 14
+      proposed_singlet_count: 179
+      expected_doublet_rate: 0.075
+      pN: 0.25
+      pK: 0.19
+      nExp_raw: 14
+      homotypic_prop: 0.0
+      nExp_adjusted: 14
+      cell_class_counts:
+        Doublet: 14
+        Singlet: 179
+        NotRun: 0
+        Other: 0
+  approval:
+    required: true
+    status: "approved"
+    reviewed_by: "jimmy"
+    approved_at: "2026-07-24T12:00:00+02:00"
