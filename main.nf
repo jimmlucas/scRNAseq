@@ -13,6 +13,7 @@ include { DOUBLET_POLICY_RESOLUTION_PHASE } from './subworkflow/bbudy/doublet_po
 include { DOUBLET_APPROVAL_PHASE } from './subworkflow/bbudy/doublet_approval_phase'
 include { DOUBLET_FILTER_PHASE } from './subworkflow/bbudy/doublet_filter_phase'
 include { POST_DOUBLET_QC_SUMMARY_PHASE } from './subworkflow/bbudy/post_doublet_qc_summary_phase'
+include { NORMALIZATION_POLICY_RESOLUTION_PHASE } from './subworkflow/bbudy/normalization_policy_resolution_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -533,6 +534,86 @@ workflow {
 
 
     /*
+     * MODE: normalization_policy_resolution_phase
+     *
+     * Resolve a proposed normalization policy from the
+     * post-doublet analysis readiness contract. This mode does not
+     * normalize or modify the Seurat object.
+     */
+    } else if (
+        params.mode == 'normalization_policy_resolution_phase'
+    ) {
+
+        if (!params.analysis_readiness) {
+            error """
+            The normalization_policy_resolution_phase mode requires:
+
+            --analysis_readiness <path_to_03_analysis_readiness.yaml>
+            """.stripIndent()
+        }
+
+        if (!params.post_doublet_qc_summary) {
+            error """
+            The normalization_policy_resolution_phase mode requires:
+
+            --post_doublet_qc_summary <path_to_03_post_doublet_qc_summary.csv>
+            """.stripIndent()
+        }
+
+        if (!params.post_doublet_qc_by_sample) {
+            error """
+            The normalization_policy_resolution_phase mode requires:
+
+            --post_doublet_qc_by_sample <path_to_03_post_doublet_qc_by_sample.csv>
+            """.stripIndent()
+        }
+
+        if (!params.post_doublet_qc_warnings) {
+            error """
+            The normalization_policy_resolution_phase mode requires:
+
+            --post_doublet_qc_warnings <path_to_03_post_doublet_qc_warnings.tsv>
+            """.stripIndent()
+        }
+
+        readiness_ch = Channel.value(
+            file(
+                params.analysis_readiness,
+                checkIfExists: true
+            )
+        )
+
+        post_doublet_summary_ch = Channel.value(
+            file(
+                params.post_doublet_qc_summary,
+                checkIfExists: true
+            )
+        )
+
+        post_doublet_by_sample_ch = Channel.value(
+            file(
+                params.post_doublet_qc_by_sample,
+                checkIfExists: true
+            )
+        )
+
+        post_doublet_warnings_ch = Channel.value(
+            file(
+                params.post_doublet_qc_warnings,
+                checkIfExists: true
+            )
+        )
+
+        NORMALIZATION_POLICY_RESOLUTION_PHASE(
+            scientific_meta_ch,
+            readiness_ch,
+            post_doublet_summary_ch,
+            post_doublet_by_sample_ch,
+            post_doublet_warnings_ch
+        )
+
+
+    /*
      * MODE: load_phase
      */
     } else if (params.mode == 'load_phase') {
@@ -918,6 +999,7 @@ workflow {
             - doublet_approval_phase
             - doublet_filter_phase
             - post_doublet_qc_summary_phase
+            - normalization_policy_resolution_phase
             - qc_process
             - load_phase
             - qc_filter_phase

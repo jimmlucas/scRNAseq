@@ -92,6 +92,16 @@ artifact_types:
       Machine-readable readiness contract describing whether the
       post-QC dataset can enter the next analysis phase.
 
+  normalization_policy:
+    description: >
+      Proposed or approved normalization policy describing method,
+      variable feature selection and downstream integration intent.
+
+  normalization_policy_resolution:
+    description: >
+      Summary describing how a proposed normalization policy was
+      resolved from the post-doublet readiness contract.
+
   qc_scored_seurat:
     description: >
       Seurat object after cell-cycle and dissociation scores have
@@ -843,6 +853,54 @@ modules:
 
     checkpoint_after: PCC_POST_DOUBLET_QC_READY
     resource_class: high_memory
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
+  NORMALIZATION_POLICY_RESOLUTION:
+    stage: qc_control
+    process_name: NORMALIZATION_POLICY_RESOLUTION
+    mode: normalization_policy_resolution_phase
+    script: scripts/control/resolve_normalization_policy.py
+    runtime_config: analysis_readiness.yaml
+
+    config_sections:
+      - readiness
+      - normalization
+
+    input_artifacts:
+      - artifact_type: analysis_readiness
+        path: 03_post_doublet_qc/03_analysis_readiness.yaml
+
+      - artifact_type: metrics
+        path: 03_post_doublet_qc/03_post_doublet_qc_summary.csv
+
+      - artifact_type: per_sample_metrics
+        path: 03_post_doublet_qc/03_post_doublet_qc_by_sample.csv
+
+      - artifact_type: analysis_warnings
+        path: 03_post_doublet_qc/03_post_doublet_qc_warnings.tsv
+
+    output_artifacts:
+      - artifact_type: normalization_policy
+        path: control/normalization_policy/normalization_policy.yaml
+
+      - artifact_type: normalization_policy
+        path: control/normalization_policy/normalization_policy.tsv
+
+      - artifact_type: normalization_policy_resolution
+        path: control/normalization_policy/normalization_policy_resolution.summary.tsv
+
+      - artifact_type: session_info
+        path: control/normalization_policy/normalization_policy_resolution.session.txt
+
+    checkpoint_after: PCC_NORMALIZATION_POLICY_PROPOSED
+    resource_class: lightweight
     can_start_from: true
     can_resume_from_output: true
 
