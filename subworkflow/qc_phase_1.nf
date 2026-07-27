@@ -13,7 +13,7 @@ workflow QC_PHASE_1 {
 
     main:
 
-    load_script_ch = Channel.value(
+    load_script_ch = channel.value(
         file(
             "${projectDir}/scripts/00-Loading_data.R",
             checkIfExists: true
@@ -37,7 +37,7 @@ workflow QC_PHASE_1 {
         load_script_ch
     )
 
-    qc_filter_script_ch = Channel.value(
+    qc_filter_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01_qc_filter.R",
             checkIfExists: true

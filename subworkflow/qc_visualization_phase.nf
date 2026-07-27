@@ -12,7 +12,7 @@ workflow QC_VISUALIZATION_PHASE {
 
     main:
 
-    qc_visualization_script_ch = Channel.value(
+    qc_visualization_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01b_qc_visualization.R",
             checkIfExists: true

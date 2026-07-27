@@ -16,7 +16,7 @@ workflow INTEGRATION_POLICY_RESOLUTION_PHASE {
 
     main:
 
-    resolver_script_ch = Channel.value(
+    resolver_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/resolve_integration_policy.py",
             checkIfExists: true

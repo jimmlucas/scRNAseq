@@ -14,7 +14,7 @@ workflow DOUBLET_POLICY_RESOLUTION_PHASE {
 
     main:
 
-    resolver_script_ch = Channel.value(
+    resolver_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/resolve_doublet_policy.py",
             checkIfExists: true

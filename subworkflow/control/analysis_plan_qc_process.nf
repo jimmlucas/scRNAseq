@@ -17,21 +17,21 @@ workflow ANALYSIS_PLAN_QC_PROCESS {
 
     main:
 
-    validation_script_ch = Channel.value(
+    validation_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/validate_analysis_plan.py",
             checkIfExists: true
         )
     )
 
-    routing_script_ch = Channel.value(
+    routing_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/resolve_analysis_plan.py",
             checkIfExists: true
         )
     )
 
-    module_catalog_ch = Channel.value(
+    module_catalog_ch = channel.value(
         file(
             "${projectDir}/control/module_catalog.yaml",
             checkIfExists: true
@@ -50,35 +50,35 @@ workflow ANALYSIS_PLAN_QC_PROCESS {
             )
         }
 
-    input_discovery_script_ch = Channel.value(
+    input_discovery_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/input_discovery.py",
             checkIfExists: true
         )
     )
 
-    load_config_resolve_script_ch = Channel.value(
+    load_config_resolve_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/resolve_load_config.py",
             checkIfExists: true
         )
     )
 
-    load_script_ch = Channel.value(
+    load_script_ch = channel.value(
         file(
             "${projectDir}/scripts/00-Loading_data.R",
             checkIfExists: true
         )
     )
 
-    qc_metrics_script_ch = Channel.value(
+    qc_metrics_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01a_qc_metrics.R",
             checkIfExists: true
         )
     )
 
-    qc_threshold_resolution_script_ch = Channel.value(
+    qc_threshold_resolution_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/resolve_qc_thresholds.py",
             checkIfExists: true

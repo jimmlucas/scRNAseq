@@ -14,7 +14,7 @@ workflow PC_SELECTION_POLICY_RESOLUTION_PHASE {
 
     main:
 
-    resolver_script_ch = Channel.value(
+    resolver_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/resolve_pc_selection_policy.py",
             checkIfExists: true

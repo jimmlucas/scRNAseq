@@ -13,7 +13,7 @@ workflow DOUBLET_DETECTION_SCORING_PHASE {
 
     main:
 
-    doublet_detection_script_ch = Channel.value(
+    doublet_detection_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01g_doublet_detection_scoring.R",
             checkIfExists: true

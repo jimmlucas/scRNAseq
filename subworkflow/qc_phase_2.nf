@@ -14,21 +14,21 @@ workflow QC_PHASE_2 {
 
     main:
 
-    qc_visualization_script_ch = Channel.value(
+    qc_visualization_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01b_qc_visualization.R",
             checkIfExists: true
         )
     )
 
-    doublet_detection_script_ch = Channel.value(
+    doublet_detection_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01c_doublet_detection.R",
             checkIfExists: true
         )
     )
 
-    qc_scores_script_ch = Channel.value(
+    qc_scores_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01d_qc_scores.R",
             checkIfExists: true

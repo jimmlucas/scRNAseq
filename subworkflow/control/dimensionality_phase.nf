@@ -13,7 +13,7 @@ workflow DIMENSIONALITY_PHASE {
 
     main:
 
-    dimensionality_script_ch = Channel.value(
+    dimensionality_script_ch = channel.value(
         file(
             "${projectDir}/scripts/05_dimensionality.R",
             checkIfExists: true

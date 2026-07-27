@@ -13,14 +13,14 @@ workflow PC_SELECTION_APPROVAL_PHASE {
 
     main:
 
-    validation_script_ch = Channel.value(
+    validation_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/validate_analysis_plan.py",
             checkIfExists: true
         )
     )
 
-    approval_validator_script_ch = Channel.value(
+    approval_validator_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/validate_pc_selection_approval.py",
             checkIfExists: true

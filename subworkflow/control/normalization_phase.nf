@@ -13,7 +13,7 @@ workflow NORMALIZATION_PHASE {
 
     main:
 
-    normalization_script_ch = Channel.value(
+    normalization_script_ch = channel.value(
         file(
             "${projectDir}/scripts/04_normalization.R",
             checkIfExists: true

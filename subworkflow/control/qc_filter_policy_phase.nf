@@ -13,7 +13,7 @@ workflow QC_FILTER_POLICY_PHASE {
 
     main:
 
-    qc_filter_script_ch = Channel.value(
+    qc_filter_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01e_qc_filter_policy.R",
             checkIfExists: true

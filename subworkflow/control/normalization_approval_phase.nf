@@ -1,6 +1,6 @@
 nextflow.enable.dsl=2
 
-include { VALIDATE_ANALYSIS_PLAN } from '../../modules/control/validate_analysis_plan'
+include { VALIDATE_ANALYSIS_PLAN }          from '../../modules/control/validate_analysis_plan'
 include { VALIDATE_NORMALIZATION_APPROVAL } from '../../modules/control/validate_normalization_approval'
 
 
@@ -13,14 +13,14 @@ workflow NORMALIZATION_APPROVAL_PHASE {
 
     main:
 
-    validation_script_ch = Channel.value(
+    validation_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/validate_analysis_plan.py",
             checkIfExists: true
         )
     )
 
-    approval_validator_script_ch = Channel.value(
+    approval_validator_script_ch = channel.value(
         file(
             "${projectDir}/scripts/control/validate_normalization_approval.py",
             checkIfExists: true

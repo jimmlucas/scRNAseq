@@ -13,7 +13,7 @@ workflow DOUBLET_FILTER_PHASE {
 
     main:
 
-    doublet_filter_script_ch = Channel.value(
+    doublet_filter_script_ch = channel.value(
         file(
             "${projectDir}/scripts/02_doublet_filter.R",
             checkIfExists: true

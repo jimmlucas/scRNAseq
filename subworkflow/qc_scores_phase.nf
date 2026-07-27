@@ -12,7 +12,7 @@ workflow QC_SCORES_PHASE {
 
     main:
 
-    qc_scores_script_ch = Channel.value(
+    qc_scores_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01d_qc_scores.R",
             checkIfExists: true

@@ -15,7 +15,7 @@ workflow QC_VISUALIZATION_POLICY_PHASE {
 
     main:
 
-    visualization_script_ch = Channel.value(
+    visualization_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01f_qc_visualization_policy.R",
             checkIfExists: true

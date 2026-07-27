@@ -11,7 +11,7 @@ workflow LOAD_PHASE {
 
     main:
 
-    load_script_ch = Channel.value(
+    load_script_ch = channel.value(
         file(
             "${projectDir}/scripts/00-Loading_data.R",
             checkIfExists: true

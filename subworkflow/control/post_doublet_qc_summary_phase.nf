@@ -13,7 +13,7 @@ workflow POST_DOUBLET_QC_SUMMARY_PHASE {
 
     main:
 
-    summary_script_ch = Channel.value(
+    summary_script_ch = channel.value(
         file(
             "${projectDir}/scripts/03_post_doublet_qc_summary.R",
             checkIfExists: true

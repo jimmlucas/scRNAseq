@@ -12,7 +12,7 @@ workflow DOUBLET_PHASE {
 
     main:
 
-    doublet_detection_script_ch = Channel.value(
+    doublet_detection_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01c_doublet_detection.R",
             checkIfExists: true

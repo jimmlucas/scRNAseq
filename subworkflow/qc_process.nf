@@ -21,35 +21,35 @@ workflow qc_process {
      * Any scientific script change therefore invalidates only the
      * relevant process cache.
      */
-    load_script_ch = Channel.value(
+    load_script_ch = channel.value(
         file(
             "${projectDir}/scripts/00-Loading_data.R",
             checkIfExists: true
         )
     )
 
-    qc_filter_script_ch = Channel.value(
+    qc_filter_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01_qc_filter.R",
             checkIfExists: true
         )
     )
 
-    qc_visualization_script_ch = Channel.value(
+    qc_visualization_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01b_qc_visualization.R",
             checkIfExists: true
         )
     )
 
-    doublet_detection_script_ch = Channel.value(
+    doublet_detection_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01c_doublet_detection.R",
             checkIfExists: true
         )
     )
 
-    qc_scores_script_ch = Channel.value(
+    qc_scores_script_ch = channel.value(
         file(
             "${projectDir}/scripts/01d_qc_scores.R",
             checkIfExists: true

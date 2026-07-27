@@ -49,7 +49,7 @@ workflow {
         scope             : 'run'
     ]
 
-    scientific_meta_ch = Channel.value(scientific_meta)
+    scientific_meta_ch = channel.value(scientific_meta)
 
     /*
      * MODE: analysis_plan_qc_process
@@ -70,7 +70,7 @@ workflow {
             """.stripIndent()
         }
 
-        analysis_plan_ch = Channel.value(
+        analysis_plan_ch = channel.value(
             file(
                 params.analysis_plan,
                 checkIfExists: true
@@ -118,7 +118,7 @@ workflow {
             checkIfExists: true
         )
 
-        plan_artifact_ch = Channel.value(
+        plan_artifact_ch = channel.value(
             tuple(
                 scientific_meta + [
                     stage         : 'analysis_plan',
@@ -128,7 +128,7 @@ workflow {
             )
         )
 
-        reviewed_policy_artifact_ch = Channel.value(
+        reviewed_policy_artifact_ch = channel.value(
             tuple(
                 scientific_meta + [
                     stage           : 'qc_threshold_review',
@@ -171,14 +171,14 @@ workflow {
             """.stripIndent()
         }
 
-        qc_metrics_object_ch = Channel.value(
+        qc_metrics_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        approved_policy_ch = Channel.value(
+        approved_policy_ch = channel.value(
             file(
                 params.approved_qc_threshold_policy,
                 checkIfExists: true
@@ -234,28 +234,28 @@ workflow {
             """.stripIndent()
         }
 
-        qc_metrics_object_ch = Channel.value(
+        qc_metrics_object_ch = channel.value(
             file(
                 params.before_object,
                 checkIfExists: true
             )
         )
 
-        filtered_object_ch = Channel.value(
+        filtered_object_ch = channel.value(
             file(
                 params.after_object,
                 checkIfExists: true
             )
         )
 
-        cell_decisions_ch = Channel.value(
+        cell_decisions_ch = channel.value(
             file(
                 params.cell_decisions,
                 checkIfExists: true
             )
         )
 
-        approved_policy_ch = Channel.value(
+        approved_policy_ch = channel.value(
             file(
                 params.approved_qc_threshold_policy,
                 checkIfExists: true
@@ -297,14 +297,14 @@ workflow {
             """.stripIndent()
         }
 
-        filtered_object_ch = Channel.value(
+        filtered_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        doublet_config_ch = Channel.value(
+        doublet_config_ch = channel.value(
             file(
                 params.doublet_config,
                 checkIfExists: true
@@ -353,21 +353,21 @@ workflow {
             """.stripIndent()
         }
 
-        doublet_summary_ch = Channel.value(
+        doublet_summary_ch = channel.value(
             file(
                 params.doublet_summary,
                 checkIfExists: true
             )
         )
 
-        doublet_by_sample_ch = Channel.value(
+        doublet_by_sample_ch = channel.value(
             file(
                 params.doublet_by_sample,
                 checkIfExists: true
             )
         )
 
-        doublet_cell_scores_ch = Channel.value(
+        doublet_cell_scores_ch = channel.value(
             file(
                 params.doublet_cell_scores,
                 checkIfExists: true
@@ -418,7 +418,7 @@ workflow {
             checkIfExists: true
         )
 
-        plan_artifact_ch = Channel.value(
+        plan_artifact_ch = channel.value(
             tuple(
                 scientific_meta + [
                     stage         : 'analysis_plan',
@@ -428,7 +428,7 @@ workflow {
             )
         )
 
-        reviewed_policy_artifact_ch = Channel.value(
+        reviewed_policy_artifact_ch = channel.value(
             tuple(
                 scientific_meta + [
                     stage           : 'doublet_policy_review',
@@ -471,14 +471,14 @@ workflow {
             """.stripIndent()
         }
 
-        scored_object_ch = Channel.value(
+        scored_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        approved_policy_ch = Channel.value(
+        approved_policy_ch = channel.value(
             file(
                 params.approved_doublet_policy,
                 checkIfExists: true
@@ -518,14 +518,14 @@ workflow {
             """.stripIndent()
         }
 
-        filtered_object_ch = Channel.value(
+        filtered_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        applied_policy_ch = Channel.value(
+        applied_policy_ch = channel.value(
             file(
                 params.applied_doublet_policy,
                 checkIfExists: true
@@ -582,28 +582,28 @@ workflow {
             """.stripIndent()
         }
 
-        readiness_ch = Channel.value(
+        readiness_ch = channel.value(
             file(
                 params.analysis_readiness,
                 checkIfExists: true
             )
         )
 
-        post_doublet_summary_ch = Channel.value(
+        post_doublet_summary_ch = channel.value(
             file(
                 params.post_doublet_qc_summary,
                 checkIfExists: true
             )
         )
 
-        post_doublet_by_sample_ch = Channel.value(
+        post_doublet_by_sample_ch = channel.value(
             file(
                 params.post_doublet_qc_by_sample,
                 checkIfExists: true
             )
         )
 
-        post_doublet_warnings_ch = Channel.value(
+        post_doublet_warnings_ch = channel.value(
             file(
                 params.post_doublet_qc_warnings,
                 checkIfExists: true
@@ -655,7 +655,7 @@ workflow {
             checkIfExists: true
         )
 
-        plan_artifact_ch = Channel.value(
+        plan_artifact_ch = channel.value(
             tuple(
                 scientific_meta + [
                     stage         : 'analysis_plan',
@@ -665,7 +665,7 @@ workflow {
             )
         )
 
-        reviewed_policy_artifact_ch = Channel.value(
+        reviewed_policy_artifact_ch = channel.value(
             tuple(
                 scientific_meta + [
                     stage           : 'normalization_policy_review',
@@ -708,14 +708,14 @@ workflow {
             """.stripIndent()
         }
 
-        filtered_object_ch = Channel.value(
+        filtered_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        approved_policy_ch = Channel.value(
+        approved_policy_ch = channel.value(
             file(
                 params.approved_normalization_policy,
                 checkIfExists: true
@@ -757,14 +757,14 @@ workflow {
             """.stripIndent()
         }
 
-        normalized_object_ch = Channel.value(
+        normalized_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        applied_policy_ch = Channel.value(
+        applied_policy_ch = channel.value(
             file(
                 params.applied_normalization_policy,
                 checkIfExists: true
@@ -813,21 +813,21 @@ workflow {
             """.stripIndent()
         }
 
-        dimensionality_summary_ch = Channel.value(
+        dimensionality_summary_ch = channel.value(
             file(
                 params.dimensionality_summary,
                 checkIfExists: true
             )
         )
 
-        variable_features_ch = Channel.value(
+        variable_features_ch = channel.value(
             file(
                 params.variable_features_summary,
                 checkIfExists: true
             )
         )
 
-        elbow_metrics_ch = Channel.value(
+        elbow_metrics_ch = channel.value(
             file(
                 params.pca_elbow_metrics,
                 checkIfExists: true
@@ -878,7 +878,7 @@ workflow {
             checkIfExists: true
         )
 
-        plan_artifact_ch = Channel.value(
+        plan_artifact_ch = channel.value(
             tuple(
                 scientific_meta + [
                     stage         : 'analysis_plan',
@@ -888,7 +888,7 @@ workflow {
             )
         )
 
-        reviewed_policy_artifact_ch = Channel.value(
+        reviewed_policy_artifact_ch = channel.value(
             tuple(
                 scientific_meta + [
                     stage           : 'pc_selection_policy_review',
@@ -957,35 +957,35 @@ workflow {
             """.stripIndent()
         }
 
-        pca_object_ch = Channel.value(
+        pca_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        dimensionality_summary_ch = Channel.value(
+        dimensionality_summary_ch = channel.value(
             file(
                 params.dimensionality_summary,
                 checkIfExists: true
             )
         )
 
-        approved_pc_selection_policy_ch = Channel.value(
+        approved_pc_selection_policy_ch = channel.value(
             file(
                 params.approved_pc_selection_policy,
                 checkIfExists: true
             )
         )
 
-        analysis_readiness_ch = Channel.value(
+        analysis_readiness_ch = channel.value(
             file(
                 params.analysis_readiness,
                 checkIfExists: true
             )
         )
 
-        applied_normalization_policy_ch = Channel.value(
+        applied_normalization_policy_ch = channel.value(
             file(
                 params.applied_normalization_policy,
                 checkIfExists: true
@@ -1015,7 +1015,7 @@ workflow {
             """.stripIndent()
         }
 
-        load_config_ch = Channel.value(
+        load_config_ch = channel.value(
             file(
                 params.load_config,
                 checkIfExists: true
@@ -1052,14 +1052,14 @@ workflow {
             """.stripIndent()
         }
 
-        loaded_object_ch = Channel.value(
+        loaded_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        qc_filter_config_ch = Channel.value(
+        qc_filter_config_ch = channel.value(
             file(
                 params.qc_filter_config,
                 checkIfExists: true
@@ -1103,14 +1103,14 @@ workflow {
             """.stripIndent()
         }
 
-        load_config_ch = Channel.value(
+        load_config_ch = channel.value(
             file(
                 params.load_config,
                 checkIfExists: true
             )
         )
 
-        qc_filter_config_ch = Channel.value(
+        qc_filter_config_ch = channel.value(
             file(
                 params.qc_filter_config,
                 checkIfExists: true
@@ -1154,14 +1154,14 @@ workflow {
             """.stripIndent()
         }
 
-        filtered_object_ch = Channel.value(
+        filtered_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        config_ch = Channel.value(
+        config_ch = channel.value(
             file(
                 params.config_file,
                 checkIfExists: true
@@ -1209,14 +1209,14 @@ workflow {
             """.stripIndent()
         }
 
-        filtered_object_ch = Channel.value(
+        filtered_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        visualization_config_ch = Channel.value(
+        visualization_config_ch = channel.value(
             file(
                 phase_config,
                 checkIfExists: true
@@ -1264,14 +1264,14 @@ workflow {
             """.stripIndent()
         }
 
-        filtered_object_ch = Channel.value(
+        filtered_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        doublet_config_ch = Channel.value(
+        doublet_config_ch = channel.value(
             file(
                 phase_config,
                 checkIfExists: true
@@ -1319,14 +1319,14 @@ workflow {
             """.stripIndent()
         }
 
-        singlet_object_ch = Channel.value(
+        singlet_object_ch = channel.value(
             file(
                 params.input_object,
                 checkIfExists: true
             )
         )
 
-        scores_config_ch = Channel.value(
+        scores_config_ch = channel.value(
             file(
                 phase_config,
                 checkIfExists: true
@@ -1358,7 +1358,7 @@ workflow {
             """.stripIndent()
         }
 
-        config_ch = Channel.value(
+        config_ch = channel.value(
             file(
                 params.config_file,
                 checkIfExists: true
