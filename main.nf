@@ -12,6 +12,7 @@ include { DOUBLET_DETECTION_SCORING_PHASE } from './subworkflow/bbudy/doublet_de
 include { DOUBLET_POLICY_RESOLUTION_PHASE } from './subworkflow/bbudy/doublet_policy_resolution_phase'
 include { DOUBLET_APPROVAL_PHASE } from './subworkflow/bbudy/doublet_approval_phase'
 include { DOUBLET_FILTER_PHASE } from './subworkflow/bbudy/doublet_filter_phase'
+include { POST_DOUBLET_QC_SUMMARY_PHASE } from './subworkflow/bbudy/post_doublet_qc_summary_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -485,6 +486,53 @@ workflow {
 
 
     /*
+     * MODE: post_doublet_qc_summary_phase
+     *
+     * Produce a non-destructive readiness summary from the canonical
+     * post-QC, post-doublet Seurat artifact.
+     */
+    } else if (
+        params.mode == 'post_doublet_qc_summary_phase'
+    ) {
+
+        if (!params.input_object) {
+            error """
+            The post_doublet_qc_summary_phase mode requires:
+
+            --input_object <path_to_seu_doublet_filtered.rds>
+            """.stripIndent()
+        }
+
+        if (!params.applied_doublet_policy) {
+            error """
+            The post_doublet_qc_summary_phase mode requires:
+
+            --applied_doublet_policy <path_to_applied_doublet_policy.yaml>
+            """.stripIndent()
+        }
+
+        filtered_object_ch = Channel.value(
+            file(
+                params.input_object,
+                checkIfExists: true
+            )
+        )
+
+        applied_policy_ch = Channel.value(
+            file(
+                params.applied_doublet_policy,
+                checkIfExists: true
+            )
+        )
+
+        POST_DOUBLET_QC_SUMMARY_PHASE(
+            scientific_meta_ch,
+            filtered_object_ch,
+            applied_policy_ch
+        )
+
+
+    /*
      * MODE: load_phase
      */
     } else if (params.mode == 'load_phase') {
@@ -869,6 +917,7 @@ workflow {
             - qc_visualization_policy_phase
             - doublet_approval_phase
             - doublet_filter_phase
+            - post_doublet_qc_summary_phase
             - qc_process
             - load_phase
             - qc_filter_phase

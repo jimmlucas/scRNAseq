@@ -82,6 +82,16 @@ artifact_types:
       Cell-level audit table listing every cell removed by an approved
       doublet filter policy.
 
+  analysis_warnings:
+    description: >
+      Structured warnings produced by readiness checks before starting
+      downstream analysis.
+
+  analysis_readiness:
+    description: >
+      Machine-readable readiness contract describing whether the
+      post-QC dataset can enter the next analysis phase.
+
   qc_scored_seurat:
     description: >
       Seurat object after cell-cycle and dissociation scores have
@@ -787,6 +797,51 @@ modules:
         path: 02_doublet_filter/02_doublet_filter_sessionInfo.txt
 
     checkpoint_after: PCC_DOUBLET_FILTER_APPLIED
+    resource_class: high_memory
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
+  POST_DOUBLET_QC_SUMMARY:
+    stage: qc_control
+    process_name: POST_DOUBLET_QC_SUMMARY
+    mode: post_doublet_qc_summary_phase
+    script: scripts/03_post_doublet_qc_summary.R
+    runtime_config: applied_doublet_policy.yaml
+
+    config_sections:
+      - doublet_policy
+      - readiness
+
+    input_artifacts:
+      - artifact_type: singlet_seurat
+        path: 02_doublet_filter/seu_doublet_filtered.rds
+
+      - artifact_type: applied_doublet_policy
+        path: 02_doublet_filter/applied_doublet_policy.yaml
+
+    output_artifacts:
+      - artifact_type: metrics
+        path: 03_post_doublet_qc/03_post_doublet_qc_summary.csv
+
+      - artifact_type: per_sample_metrics
+        path: 03_post_doublet_qc/03_post_doublet_qc_by_sample.csv
+
+      - artifact_type: analysis_warnings
+        path: 03_post_doublet_qc/03_post_doublet_qc_warnings.tsv
+
+      - artifact_type: analysis_readiness
+        path: 03_post_doublet_qc/03_analysis_readiness.yaml
+
+      - artifact_type: session_info
+        path: 03_post_doublet_qc/03_sessionInfo.txt
+
+    checkpoint_after: PCC_POST_DOUBLET_QC_READY
     resource_class: high_memory
     can_start_from: true
     can_resume_from_output: true
