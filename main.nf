@@ -15,6 +15,7 @@ include { DOUBLET_FILTER_PHASE } from './subworkflow/control/doublet_filter_phas
 include { POST_DOUBLET_QC_SUMMARY_PHASE } from './subworkflow/control/post_doublet_qc_summary_phase'
 include { NORMALIZATION_POLICY_RESOLUTION_PHASE } from './subworkflow/control/normalization_policy_resolution_phase'
 include { NORMALIZATION_APPROVAL_PHASE } from './subworkflow/control/normalization_approval_phase'
+include { NORMALIZATION_PHASE } from './subworkflow/control/normalization_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -678,6 +679,53 @@ workflow {
 
 
     /*
+     * MODE: normalization_phase
+     *
+     * Apply a human-approved and validated normalization policy
+     * to the post-doublet Seurat artifact.
+     */
+    } else if (
+        params.mode == 'normalization_phase'
+    ) {
+
+        if (!params.input_object) {
+            error """
+            The normalization_phase mode requires:
+
+            --input_object <path_to_seu_doublet_filtered.rds>
+            """.stripIndent()
+        }
+
+        if (!params.approved_normalization_policy) {
+            error """
+            The normalization_phase mode requires:
+
+            --approved_normalization_policy <path_to_approved_normalization_policy.yaml>
+            """.stripIndent()
+        }
+
+        filtered_object_ch = Channel.value(
+            file(
+                params.input_object,
+                checkIfExists: true
+            )
+        )
+
+        approved_policy_ch = Channel.value(
+            file(
+                params.approved_normalization_policy,
+                checkIfExists: true
+            )
+        )
+
+        NORMALIZATION_PHASE(
+            scientific_meta_ch,
+            filtered_object_ch,
+            approved_policy_ch
+        )
+
+
+    /*
      * MODE: load_phase
      */
     } else if (params.mode == 'load_phase') {
@@ -1065,6 +1113,7 @@ workflow {
             - post_doublet_qc_summary_phase
             - normalization_policy_resolution_phase
             - normalization_approval_phase
+            - normalization_phase
             - qc_process
             - load_phase
             - qc_filter_phase

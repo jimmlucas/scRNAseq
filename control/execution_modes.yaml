@@ -47,9 +47,9 @@ policy_gates:
     approval_mode: normalization_approval_phase
     approved_artifact: control/normalization_policy_approval/approved_normalization_policy.yaml
     application_mode: normalization_phase
-    application_artifact: null
+    application_artifact: 04_normalization/seu_normalized.rds
     requires_human_review: true
-    implementation_state: planned
+    implementation_state: available
 
 execution_modes:
 
@@ -70,6 +70,7 @@ execution_modes:
       - post_doublet_qc_summary_phase
       - normalization_policy_resolution_phase
       - normalization_approval_phase
+      - normalization_phase
       - load_phase
       - qc_filter_phase
       - qc_phase_1
@@ -111,4 +112,3 @@ external_supervisor_flow:
     - reviewed policy file preparation
     - selecting the next mode to invoke
     - case history outside the pipeline
-

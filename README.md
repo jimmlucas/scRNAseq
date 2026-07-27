@@ -51,7 +51,7 @@ Nextflow + Docker + configs + approved policies
 
 ## Current Flow
 
-The current plan-driven path reaches the normalization approval gate:
+The current plan-driven path reaches normalization:
 
 ```text
 VALIDATE_ANALYSIS_PLAN
@@ -85,9 +85,11 @@ POST_DOUBLET_QC_SUMMARY
 NORMALIZATION_POLICY_RESOLUTION
         ↓
 VALIDATE_NORMALIZATION_APPROVAL
+        ↓
+NORMALIZATION
 ```
 
-`NORMALIZATION` is the next scientific application block.
+The next scientific blocks are scaling/PCA and integration policy.
 
 ## Policy Pattern
 
@@ -161,6 +163,7 @@ doublet_filter_phase
 post_doublet_qc_summary_phase
 normalization_policy_resolution_phase
 normalization_approval_phase
+normalization_phase
 ```
 
 Legacy standalone modes are still present while the plan-driven contract
@@ -222,6 +225,8 @@ tests/doublet_approval/run_tests.sh
 tests/doublet_filter/run_test.sh
 tests/post_doublet_qc/run_test.sh
 tests/normalization_policy/run_test.sh
+tests/normalization_approval/run_tests.sh
+tests/normalization/run_test.sh
 ```
 
 Several tests require Docker and the pinned R/Python images.
