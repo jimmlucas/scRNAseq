@@ -1,0 +1,479 @@
+schema_version: "1.0"
+
+pipeline:
+  id: scrna_seq
+  contract_type: causistics_catalog
+  description: >
+    Structured catalog of recurrent single-cell analysis situations detected
+    from prior studies. Pipeline modules can emit these codes as warnings,
+    blockers or policy inputs. Scientific decisions remain represented as
+    reviewed policy files.
+
+principles:
+  - Causistics are evidence records, not automatic scientific decisions.
+  - Each emitted causistic must include measurable evidence.
+  - Blocking causistics require a reviewed policy before application.
+  - External supervisors may use prior cases to explain and recommend options.
+  - Standalone execution remains possible by supplying reviewed policy files.
+
+severity_levels:
+  info:
+    description: Record useful context without changing execution.
+  warning:
+    description: Continue execution but surface the issue for review.
+  review_required:
+    description: Pause before application if the next step changes biology.
+  blocking:
+    description: Stop the phase until a reviewed policy resolves the issue.
+
+decision_types:
+  operational:
+    description: Safe execution choice that does not alter biological inclusion.
+  scientific:
+    description: Choice that changes samples, cells, features, modalities or labels.
+  reporting:
+    description: Choice that changes interpretation, visibility or report emphasis.
+
+modalities:
+  RNA:
+    applies_to:
+      - scRNA-seq
+      - snRNA-seq
+      - CITE-seq
+  AB:
+    applies_to:
+      - CITE-seq
+  SampleTag:
+    applies_to:
+      - CITE-seq
+      - multiplexed_scRNA-seq
+  BCR:
+    applies_to:
+      - BCR-seq
+      - CITE-seq_with_VDJ
+
+causistics:
+
+  low_cell_count_sample:
+    category: qc
+    modalities: [RNA]
+    default_severity: warning
+    decision_type: scientific
+    detection_evidence:
+      - cells_per_sample
+      - min_cells_per_sample
+    candidate_actions:
+      - keep_with_warning
+      - exclude_sample
+      - request_sequencing_or_metadata_review
+    policy_gate: qc_thresholds
+    prior_patterns:
+      - Low final cell counts were surfaced in QC conclusions and considered
+        when deciding whether samples were suitable for downstream analyses.
+
+  high_cell_count_or_count_outliers:
+    category: qc
+    modalities: [RNA]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - nCount_RNA_distribution
+      - nFeature_RNA_distribution
+      - upper_count_threshold
+    candidate_actions:
+      - filter_high_count_cells
+      - keep_with_doublet_warning
+      - trigger_doublet_detection
+    policy_gate: qc_thresholds
+    prior_patterns:
+      - High UMI or feature counts were treated as possible doublet evidence.
+
+  high_mitochondrial_content:
+    category: qc
+    modalities: [RNA]
+    default_severity: warning
+    decision_type: scientific
+    detection_evidence:
+      - percent_mito_distribution
+      - percent_mito_threshold
+      - organism_specific_gene_pattern
+    candidate_actions:
+      - apply_threshold
+      - relax_threshold_with_rationale
+      - inspect_by_sample_or_cell_type
+    policy_gate: qc_thresholds
+    prior_patterns:
+      - Mouse scRNA analyses used mild mitochondrial filtering when biology
+        could plausibly increase mitochondrial expression.
+      - BD Rhapsody studies noted that mitochondrial percentages may differ
+        from 10x expectations.
+
+  high_ribosomal_content:
+    category: qc
+    modalities: [RNA]
+    default_severity: warning
+    decision_type: scientific
+    detection_evidence:
+      - percent_ribo_distribution
+      - percent_ribo_threshold
+      - correlation_with_percent_mito
+    candidate_actions:
+      - apply_threshold
+      - keep_as_biological_signal
+      - regress_during_sctransform
+    policy_gate: qc_thresholds
+    prior_patterns:
+      - Ribosomal content was inspected because it can be technical or
+        biologically meaningful depending on context.
+      - CITE-seq normalization used percent.ribo as an SCTransform regressor.
+
+  high_globin_content:
+    category: qc
+    modalities: [RNA]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - percent_globin_distribution
+      - percent_globin_threshold
+      - sample_or_run_enrichment
+    candidate_actions:
+      - filter_high_globin_cells
+      - exclude_run_or_sample
+      - keep_with_erythrocyte_contamination_note
+    policy_gate: qc_thresholds
+    prior_patterns:
+      - One CITE-seq run was excluded because its repeated sample had high
+        globin signal and a better-quality repeat existed.
+
+  repeated_sample_across_runs:
+    category: sample_resolution
+    modalities: [RNA, AB, SampleTag]
+    default_severity: blocking
+    decision_type: scientific
+    detection_evidence:
+      - sample_id
+      - run_id
+      - cells_per_run
+      - qc_metrics_per_run
+    candidate_actions:
+      - keep_best_quality_instance
+      - merge_repeated_instances
+      - exclude_lower_quality_instance
+      - request_human_resolution
+    policy_gate: sample_resolution
+    prior_patterns:
+      - Repeated samples were compared after QC and lower-quality instances
+        were removed before downstream integration.
+
+  run_quality_outlier:
+    category: sample_resolution
+    modalities: [RNA, AB, SampleTag]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - run_id
+      - run_level_cell_count
+      - run_level_qc_metrics
+      - repeated_sample_status
+    candidate_actions:
+      - exclude_run
+      - keep_run_with_warning
+      - inspect_vendor_report
+    policy_gate: sample_resolution
+    prior_patterns:
+      - BD Rhapsody run-level reports and metrics summaries were reviewed
+        alongside Seurat QC artifacts.
+
+  sampletag_multiplet:
+    category: sample_tag_resolution
+    modalities: [SampleTag]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - Sample_Tag
+      - tag_read_count_distribution
+      - tag_rank
+      - assigned_sample_name
+    candidate_actions:
+      - remove_multiplets
+      - relabel_if_supported_by_tag_distribution
+      - keep_as_multiplet
+    policy_gate: sample_tag_resolution
+    prior_patterns:
+      - Multiplet and undetermined cells were removed in standard CITE-seq
+        preprocessing.
+      - A project-specific relabeling strategy was explored for suspected
+        CAR-T related SampleTag patterns.
+
+  undetermined_sampletag:
+    category: sample_tag_resolution
+    modalities: [SampleTag]
+    default_severity: warning
+    decision_type: scientific
+    detection_evidence:
+      - Sample_Tag
+      - tag_read_count_distribution
+      - assigned_sample_name
+    candidate_actions:
+      - remove_undetermined
+      - keep_with_warning
+      - inspect_tag_assignment
+    policy_gate: sample_tag_resolution
+    prior_patterns:
+      - Undetermined SampleTag assignments were treated as low-confidence
+        sample identity evidence.
+
+  wrong_or_unassigned_tag:
+    category: sample_tag_resolution
+    modalities: [SampleTag]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - target_manifest
+      - Sample_Tag
+      - Sample_Name
+      - cells_per_unassigned_tag
+    candidate_actions:
+      - remove_unassigned_tag_cells
+      - update_manifest_mapping
+      - keep_with_warning
+    policy_gate: sample_tag_resolution
+    prior_patterns:
+      - Tags without associated sample names and minimal cell support were
+        considered spurious in CITE-seq preprocessing.
+
+  ab_low_feature_cells:
+    category: ab_qc
+    modalities: [AB]
+    default_severity: warning
+    decision_type: scientific
+    detection_evidence:
+      - nFeature_AB_distribution
+      - min_nFeature_AB
+    candidate_actions:
+      - filter_low_ab_feature_cells
+      - keep_for_rna_only
+      - inspect_antibody_panel
+    policy_gate: ab_qc
+    prior_patterns:
+      - CITE-seq filtering removed cells with too few detected proteins.
+
+  ab_high_count_outliers:
+    category: ab_qc
+    modalities: [AB]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - nCount_AB_distribution
+      - max_nCount_AB
+    candidate_actions:
+      - filter_high_ab_count_cells
+      - inspect_doublet_or_ambient_signal
+      - keep_with_warning
+    policy_gate: ab_qc
+    prior_patterns:
+      - Very high protein counts were used as possible doublet or assay
+        artifact evidence in CITE-seq filtering.
+
+  ab_marker_removed:
+    category: ab_qc
+    modalities: [AB]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - marker_name
+      - marker_reactivity
+      - antibody_panel_manifest
+    candidate_actions:
+      - remove_marker
+      - keep_marker_with_warning
+      - request_panel_review
+    policy_gate: ab_qc
+    prior_patterns:
+      - An anti-mouse marker without expected human reactivity was removed
+        from a human CITE-seq study.
+
+  marker_based_doublet_signal:
+    category: doublets
+    modalities: [AB]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - incompatible_marker_pair
+      - marker_expression_thresholds
+      - affected_cells
+    candidate_actions:
+      - filter_marker_doublets
+      - keep_with_marker_warning
+      - request_marker_threshold_review
+    policy_gate: doublets
+    prior_patterns:
+      - CD3 and CD14 co-expression was used as a protein-level doublet signal
+        in PBMC CITE-seq.
+
+  algorithmic_doublet_signal:
+    category: doublets
+    modalities: [RNA]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - doublet_score
+      - predicted_doublets
+      - expected_doublet_rate
+      - cells_scored
+    candidate_actions:
+      - remove_proposed_doublets
+      - keep_all
+      - exclude_sample_from_filtering
+    policy_gate: doublets
+    prior_patterns:
+      - DoubletFinder was run per sample and labels were inspected before
+        filtering.
+
+  normalization_strategy_choice:
+    category: normalization
+    modalities: [RNA, AB]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - assay
+      - method
+      - regressors
+      - variable_feature_count
+      - sample_count
+    candidate_actions:
+      - LogNormalize_vst
+      - SCTransform_with_regressors
+      - CLR_for_AB
+    policy_gate: normalization
+    prior_patterns:
+      - Mouse scRNA scripts used SCTransform after QC and doublet annotation.
+      - Human CITE-seq scripts used SCTransform for RNA and CLR for AB.
+
+  integration_required:
+    category: integration
+    modalities: [RNA, AB]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - sample_count
+      - run_count
+      - sample_or_run_separation_in_umap
+      - batch_metadata_columns
+    candidate_actions:
+      - run_harmony
+      - defer_integration
+      - integrate_by_run
+      - integrate_by_sample_and_run
+    policy_gate: integration
+    prior_patterns:
+      - Harmony was used to correct sample and run effects when cells clustered
+        by condition, sample or run.
+
+  multimodal_wnn_applicable:
+    category: clustering
+    modalities: [RNA, AB]
+    default_severity: info
+    decision_type: scientific
+    detection_evidence:
+      - RNA_reduction
+      - AB_reduction
+      - shared_cell_barcodes
+    candidate_actions:
+      - run_WNN
+      - RNA_only_clustering
+      - AB_only_exploration
+    policy_gate: clustering
+    prior_patterns:
+      - WNN was used in CITE-seq to combine RNA and protein representations.
+
+  small_cluster:
+    category: clustering
+    modalities: [RNA, AB]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - cluster_id
+      - cells_per_cluster
+      - min_cells_per_cluster
+    candidate_actions:
+      - exclude_cluster_from_downstream
+      - merge_cluster
+      - keep_cluster
+      - request_annotation_review
+    policy_gate: clustering
+    prior_patterns:
+      - Clusters with fewer than 50 cells were excluded from some downstream
+        analyses in a CITE-seq report.
+
+  annotation_uncertainty:
+    category: annotation
+    modalities: [RNA]
+    default_severity: review_required
+    decision_type: scientific
+    detection_evidence:
+      - annotation_method
+      - reference_dataset
+      - cluster_marker_support
+      - conflicting_labels
+    candidate_actions:
+      - accept_automatic_label
+      - revise_label_with_markers
+      - request_domain_expert_review
+    policy_gate: annotation
+    prior_patterns:
+      - SingleR and scType annotations were used as support, while final
+        labels were reviewed with researchers.
+
+  pseudobulk_design_required:
+    category: differential_expression
+    modalities: [RNA]
+    default_severity: blocking
+    decision_type: scientific
+    detection_evidence:
+      - sample_metadata
+      - comparison_groups
+      - patient_or_subject_column
+      - cluster_column
+    candidate_actions:
+      - define_condition_model
+      - include_patient_random_effect
+      - run_condition_pseudobulk
+      - run_cluster_pseudobulk
+    policy_gate: differential_expression
+    prior_patterns:
+      - Pseudobulk DEA used edgeR/limma-voom with group and patient-aware
+        designs.
+
+  bcr_metadata_available:
+    category: clonotype
+    modalities: [BCR]
+    default_severity: info
+    decision_type: scientific
+    detection_evidence:
+      - vdj_contig_files
+      - shared_cell_barcodes
+      - bcr_metadata_columns
+    candidate_actions:
+      - run_clonotype_analysis
+      - skip_bcr_analysis
+      - request_vdj_metadata_review
+    policy_gate: clonotype
+    prior_patterns:
+      - BCR repertoires were analyzed with scRepertoire and related AIRR
+        tooling when VDJ metadata were available.
+
+output_contract:
+  recommended_file: control/causistics/causistics.yaml
+  table_file: control/causistics/causistics.tsv
+  required_fields:
+    - causistic_id
+    - category
+    - severity
+    - decision_type
+    - evidence
+    - candidate_actions
+    - policy_gate
+    - emitted_by
+    - emitted_at
+

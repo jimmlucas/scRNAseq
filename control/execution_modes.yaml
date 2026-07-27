@@ -13,13 +13,82 @@ architecture:
   external_orchestration: supported
   resume_strategy: nextflow_resume
   decision_contract: explicit_policy_files
+  causistics_contract: structured_evidence_flags
 
   principles:
     - Nextflow does not depend on any external agent.
     - External supervisors invoke existing modes and consume published artifacts.
     - Scientific decisions are represented as policy files.
+    - Causistics are emitted as evidence flags, not applied as decisions.
     - Reviewable policies must pass validation before they can be applied.
     - Application phases never recalculate upstream decision proposals.
+
+analysis_type_profiles:
+
+  scRNA-seq:
+    description: RNA-only single-cell profile.
+    default_modalities:
+      - RNA
+    typical_capabilities:
+      - rna_qc
+      - doublet_scoring
+      - normalization
+      - dimensionality
+      - integration
+      - clustering
+      - annotation
+      - pseudobulk_de
+
+  snRNA-seq:
+    description: Single-nucleus RNA profile with nuclear-aware QC policies.
+    default_modalities:
+      - RNA
+    typical_capabilities:
+      - rna_qc
+      - nuclear_qc_policy
+      - doublet_scoring
+      - normalization
+      - dimensionality
+      - integration
+      - clustering
+      - annotation
+
+  CITE-seq:
+    description: Multimodal RNA plus antibody profile, optionally with VDJ data.
+    default_modalities:
+      - RNA
+      - AB
+    optional_modalities:
+      - SampleTag
+      - BCR
+      - TCR
+    typical_capabilities:
+      - rna_qc
+      - ab_qc
+      - sampletag_resolution
+      - doublet_scoring
+      - marker_based_doublet_detection
+      - normalization
+      - ab_normalization
+      - integration
+      - multimodal_wnn
+      - clustering
+      - annotation
+      - pseudobulk_de
+      - differential_abundance
+      - clonotype_analysis
+
+causistics:
+  catalog: control/causistics_catalog.yaml
+  recommended_outputs:
+    yaml: control/causistics/causistics.yaml
+    tsv: control/causistics/causistics.tsv
+  emitted_by:
+    - input_discovery
+    - qc_metrics
+    - policy_resolution
+    - readiness_summary
+    - future_modality_specific_modules
 
 policy_gates:
 

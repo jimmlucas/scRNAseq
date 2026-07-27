@@ -55,12 +55,40 @@ assert not (root / "subworkflow/bbudy").exists()
 
 module_catalog_text = read_text(root / "control/module_catalog.yaml")
 execution_modes_text = read_text(root / "control/execution_modes.yaml")
+causistics_catalog_text = read_text(root / "control/causistics_catalog.yaml")
+legacy_patterns_text = read_text(
+    root / "docs/analysis_patterns_from_legacy_rmds.md"
+)
 
 assert 'id: scrna_seq' in module_catalog_text
 assert 'orchestrator_awareness: none' in execution_modes_text
+assert 'causistics_contract: structured_evidence_flags' in execution_modes_text
 assert 'analysis_plan_qc_process' in execution_modes_text
 assert 'normalization_approval_phase' in execution_modes_text
+assert 'scRNA-seq:' in execution_modes_text
+assert 'snRNA-seq:' in execution_modes_text
+assert 'CITE-seq:' in execution_modes_text
 assert execution_modes_text.count('requires_human_review: true') >= 3
+
+for causistic_id in [
+    "high_globin_content",
+    "repeated_sample_across_runs",
+    "sampletag_multiplet",
+    "ab_marker_removed",
+    "marker_based_doublet_signal",
+    "integration_required",
+    "multimodal_wnn_applicable",
+    "pseudobulk_design_required",
+    "bcr_metadata_available",
+]:
+    assert causistic_id in causistics_catalog_text
+
+for expected_phrase in [
+    "Mouse scRNA Patterns",
+    "Human PBMC CITE-seq Patterns",
+    "Analysis Type Profiles",
+]:
+    assert expected_phrase in legacy_patterns_text
 
 print("Architecture contract: VALID")
 PY
