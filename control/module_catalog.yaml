@@ -43,6 +43,26 @@ artifact_types:
   qc_visualization_report:
     description: QC plots and per-cell/per-sample QC metadata.
 
+  qc_visualization_summary:
+    description: >
+      Summary table describing before/after QC visualization inputs,
+      retained cells and generated plot artifacts.
+
+  qc_metric_distributions:
+    description: >
+      Long-format table of QC metric distributions before and after
+      filtering, suitable for report plots.
+
+  qc_sample_retention:
+    description: >
+      Per-sample retained/removed cell counts and retention fractions after
+      applying an approved QC policy.
+
+  qc_exclusion_reasons:
+    description: >
+      Summary table of cell exclusion reasons produced by an approved QC
+      filtering policy.
+
   singlet_seurat:
     description: >
       Seurat object after the doublet-detection policy has been

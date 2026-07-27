@@ -49,6 +49,36 @@ The pipeline should also remain usable without any supervisor:
 Nextflow + Docker + configs + approved policies
 ```
 
+## Repository Map
+
+The main directories are:
+
+```text
+main.nf
+  Nextflow entrypoint and execution-mode router
+
+modules/
+  Nextflow process definitions
+
+subworkflow/
+  Phase-level workflow composition
+
+scripts/
+  R and Python implementation scripts
+
+control/
+  Machine-readable architecture, module, policy and causistics contracts
+
+configs/
+  Example analysis plans, approvals and run configurations
+
+docs/
+  Design notes extracted from legacy RMarkdown analysis patterns
+
+tests/
+  Contract, regression and phase-level reproducibility tests
+```
+
 ## Analysis Types
 
 The same scientific engine is intended to support different single-cell
@@ -150,6 +180,46 @@ An external supervisor can use these records to compare against previous
 projects and explain options to scientists. Nextflow remains responsible for
 producing evidence, validating reviewed policies and applying only approved
 decisions.
+
+## Standalone And Supervised Use
+
+The same pipeline supports two execution styles.
+
+In standalone mode, a user runs Nextflow directly with explicit inputs and
+reviewed policy files:
+
+```text
+analysis plan
+        ↓
+Nextflow phase
+        ↓
+published artifacts
+        ↓
+human-reviewed policy file
+        ↓
+Nextflow validation/application phase with -resume
+```
+
+In supervised mode, an external system such as BBUDY can automate the control
+loop around the same artifacts:
+
+```text
+run phase
+        ↓
+read metrics, warnings, policy proposals and causistics
+        ↓
+explain options using previous cases and scientific rules
+        ↓
+request human approval when required
+        ↓
+write reviewed policy file
+        ↓
+relaunch Nextflow with -resume
+```
+
+The difference is orchestration, not scientific behavior. The pipeline does
+not know whether the next command was launched by a person, a script or an
+external supervisor.
 
 ## Current Flow
 
@@ -308,27 +378,27 @@ The control image contains `PyYAML` and is pinned in `nextflow.config`.
 
 ## Tests
 
-Architecture contract:
+Lightweight contract tests:
 
 ```bash
 tests/architecture/run_tests.sh
+python3 -m py_compile scripts/control/*.py scripts/config/*.py
 ```
 
-Normalization approval contract:
+Policy validation tests:
 
 ```bash
+tests/doublet_approval/run_tests.sh
 tests/normalization_approval/run_tests.sh
 ```
 
-Doublet and post-doublet regression tests:
+Docker-backed phase regression tests:
 
 ```bash
 tests/doublet_scoring/run_test.sh
-tests/doublet_approval/run_tests.sh
 tests/doublet_filter/run_test.sh
 tests/post_doublet_qc/run_test.sh
 tests/normalization_policy/run_test.sh
-tests/normalization_approval/run_tests.sh
 tests/normalization/run_test.sh
 ```
 

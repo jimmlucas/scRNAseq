@@ -14,6 +14,8 @@ EXECUTION_ID="${EXECUTION_ID:-DOUBLET_SCORING_REPRO_001}"
 
 CONTAINER_IMAGE="${CONTAINER_IMAGE:-ghcr.io/jimmlucas/bioc-rnaseq-test01new2@sha256:b515735a14cfeb287ae628cfb3e9591492486afa521c9f0b2baba8fee2707b94}"
 
+export DOCKER_DEFAULT_PLATFORM="${DOCKER_DEFAULT_PLATFORM:-linux/amd64}"
+
 echo "=========================================="
 echo "Doublet scoring reproducibility test"
 echo "=========================================="
