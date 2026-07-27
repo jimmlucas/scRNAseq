@@ -155,6 +155,31 @@ artifact_types:
       Copy of the approved normalization policy after NORMALIZATION has
       recorded the application state.
 
+  pca_seurat:
+    description: >
+      Seurat object after scaling variable features and computing PCA from
+      the normalized assay.
+
+  dimensionality_summary:
+    description: >
+      Audit summary describing scaling, PCA dimensions, input/output counts
+      and upstream normalization policy state.
+
+  pca_embeddings_preview:
+    description: >
+      Small cell-level PCA embedding preview intended for inspection and
+      downstream readiness checks.
+
+  pca_loadings_preview:
+    description: >
+      Small feature-level PCA loading preview intended for inspection and
+      downstream readiness checks.
+
+  pca_elbow_metrics:
+    description: >
+      Per-PC standard deviation and explained-variance metrics used to
+      support downstream PC and integration decisions.
+
   qc_scored_seurat:
     description: >
       Seurat object after cell-cycle and dissociation scores have
@@ -1042,6 +1067,59 @@ modules:
         path: 04_normalization/04_normalization_sessionInfo.txt
 
     checkpoint_after: PCC_NORMALIZATION
+    resource_class: high_memory
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - INTEGRATION
+      - CLUSTERING
+      - MARKERS
+      - ANNOTATION
+      - DIFFERENTIAL_EXPRESSION
+      - PATHWAY_ANALYSIS
+
+  DIMENSIONALITY:
+    stage: dimensionality
+    process_name: DIMENSIONALITY
+    mode: dimensionality_phase
+    script: scripts/05_dimensionality.R
+    runtime_config: applied_normalization_policy.yaml
+
+    config_sections:
+      - normalization_policy
+      - dimensionality
+
+    input_artifacts:
+      - artifact_type: normalized_seurat
+        path: 04_normalization/seu_normalized.rds
+
+      - artifact_type: applied_normalization_policy
+        path: 04_normalization/applied_normalization_policy.yaml
+
+    output_artifacts:
+      - artifact_type: pca_seurat
+        path: 05_dimensionality/seu_pca.rds
+
+      - artifact_type: dimensionality_summary
+        path: 05_dimensionality/05_dimensionality_summary.csv
+
+      - artifact_type: variable_features
+        path: 05_dimensionality/05_variable_features_summary.csv
+
+      - artifact_type: pca_embeddings_preview
+        path: 05_dimensionality/05_pca_embeddings_preview.csv
+
+      - artifact_type: pca_loadings_preview
+        path: 05_dimensionality/05_pca_loadings_preview.csv
+
+      - artifact_type: pca_elbow_metrics
+        path: 05_dimensionality/05_pca_elbow_metrics.csv
+
+      - artifact_type: session_info
+        path: 05_dimensionality/05_dimensionality_sessionInfo.txt
+
+    checkpoint_after: PCC_DIMENSIONALITY
     resource_class: high_memory
     can_start_from: true
     can_resume_from_output: true

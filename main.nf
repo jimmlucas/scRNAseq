@@ -16,6 +16,7 @@ include { POST_DOUBLET_QC_SUMMARY_PHASE } from './subworkflow/control/post_doubl
 include { NORMALIZATION_POLICY_RESOLUTION_PHASE } from './subworkflow/control/normalization_policy_resolution_phase'
 include { NORMALIZATION_APPROVAL_PHASE } from './subworkflow/control/normalization_approval_phase'
 include { NORMALIZATION_PHASE } from './subworkflow/control/normalization_phase'
+include { DIMENSIONALITY_PHASE } from './subworkflow/control/dimensionality_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -726,6 +727,55 @@ workflow {
 
 
     /*
+     * MODE: dimensionality_phase
+     *
+     * Apply deterministic technical dimensionality preparation:
+     * ScaleData over variable features and RunPCA from the normalized
+     * Seurat artifact. This phase publishes evidence for later
+     * integration decisions but does not decide integration.
+     */
+    } else if (
+        params.mode == 'dimensionality_phase'
+    ) {
+
+        if (!params.input_object) {
+            error """
+            The dimensionality_phase mode requires:
+
+            --input_object <path_to_seu_normalized.rds>
+            """.stripIndent()
+        }
+
+        if (!params.applied_normalization_policy) {
+            error """
+            The dimensionality_phase mode requires:
+
+            --applied_normalization_policy <path_to_applied_normalization_policy.yaml>
+            """.stripIndent()
+        }
+
+        normalized_object_ch = Channel.value(
+            file(
+                params.input_object,
+                checkIfExists: true
+            )
+        )
+
+        applied_policy_ch = Channel.value(
+            file(
+                params.applied_normalization_policy,
+                checkIfExists: true
+            )
+        )
+
+        DIMENSIONALITY_PHASE(
+            scientific_meta_ch,
+            normalized_object_ch,
+            applied_policy_ch
+        )
+
+
+    /*
      * MODE: load_phase
      */
     } else if (params.mode == 'load_phase') {
@@ -1108,12 +1158,15 @@ workflow {
             - qc_threshold_approval_phase
             - qc_filter_policy_phase
             - qc_visualization_policy_phase
+            - doublet_detection_scoring_phase
+            - doublet_policy_resolution_phase
             - doublet_approval_phase
             - doublet_filter_phase
             - post_doublet_qc_summary_phase
             - normalization_policy_resolution_phase
             - normalization_approval_phase
             - normalization_phase
+            - dimensionality_phase
             - qc_process
             - load_phase
             - qc_filter_phase

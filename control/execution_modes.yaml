@@ -120,6 +120,15 @@ policy_gates:
     requires_human_review: true
     implementation_state: available
 
+  dimensionality:
+    application_mode: dimensionality_phase
+    application_artifact: 05_dimensionality/seu_pca.rds
+    requires_human_review: false
+    implementation_state: available
+    decision_boundary: >
+      Scaling and PCA are technical, reproducible preparation steps.
+      Later integration choices should use the published PCA evidence.
+
 execution_modes:
 
   phase_level:
@@ -140,6 +149,7 @@ execution_modes:
       - normalization_policy_resolution_phase
       - normalization_approval_phase
       - normalization_phase
+      - dimensionality_phase
       - load_phase
       - qc_filter_phase
       - qc_phase_1

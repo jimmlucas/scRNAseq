@@ -223,7 +223,7 @@ external supervisor.
 
 ## Current Flow
 
-The current plan-driven path reaches normalization:
+The current plan-driven path reaches PCA-ready dimensionality artifacts:
 
 ```text
 VALIDATE_ANALYSIS_PLAN
@@ -259,9 +259,11 @@ NORMALIZATION_POLICY_RESOLUTION
 VALIDATE_NORMALIZATION_APPROVAL
         ↓
 NORMALIZATION
+        ↓
+DIMENSIONALITY
 ```
 
-The next scientific blocks are scaling/PCA and integration policy.
+The next scientific blocks are post-PCA readiness and integration policy.
 
 ## Policy Pattern
 
@@ -291,6 +293,10 @@ Normalization strategy
 
 Application phases must not recalculate decision proposals. They consume only
 validated policy files.
+
+Technical phases without a new scientific decision, such as scaling variable
+features and PCA, stay as deterministic application phases. They publish
+evidence for later decisions but do not introduce unnecessary approval gates.
 
 ## Execution Modes
 
@@ -336,6 +342,7 @@ post_doublet_qc_summary_phase
 normalization_policy_resolution_phase
 normalization_approval_phase
 normalization_phase
+dimensionality_phase
 ```
 
 Legacy standalone modes are still present while the plan-driven contract
@@ -400,6 +407,7 @@ tests/doublet_filter/run_test.sh
 tests/post_doublet_qc/run_test.sh
 tests/normalization_policy/run_test.sh
 tests/normalization/run_test.sh
+tests/dimensionality/run_test.sh
 ```
 
 Several tests require Docker and the pinned R/Python images.
