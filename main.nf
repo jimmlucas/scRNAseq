@@ -14,6 +14,7 @@ include { DOUBLET_APPROVAL_PHASE } from './subworkflow/bbudy/doublet_approval_ph
 include { DOUBLET_FILTER_PHASE } from './subworkflow/bbudy/doublet_filter_phase'
 include { POST_DOUBLET_QC_SUMMARY_PHASE } from './subworkflow/bbudy/post_doublet_qc_summary_phase'
 include { NORMALIZATION_POLICY_RESOLUTION_PHASE } from './subworkflow/bbudy/normalization_policy_resolution_phase'
+include { NORMALIZATION_APPROVAL_PHASE } from './subworkflow/bbudy/normalization_approval_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -614,6 +615,69 @@ workflow {
 
 
     /*
+     * MODE: normalization_approval_phase
+     *
+     * Validate a human-reviewed normalization policy before any
+     * normalization process can transform the object.
+     */
+    } else if (
+        params.mode == 'normalization_approval_phase'
+    ) {
+
+        if (!params.analysis_plan) {
+            error """
+            The normalization_approval_phase mode requires:
+
+            --analysis_plan <path_to_analysis_plan.yaml>
+            """.stripIndent()
+        }
+
+        if (!params.approved_normalization_policy) {
+            error """
+            The normalization_approval_phase mode requires:
+
+            --approved_normalization_policy <path_to_reviewed_normalization_policy.yaml>
+            """.stripIndent()
+        }
+
+        reviewed_plan = file(
+            params.analysis_plan,
+            checkIfExists: true
+        )
+
+        reviewed_policy = file(
+            params.approved_normalization_policy,
+            checkIfExists: true
+        )
+
+        plan_artifact_ch = Channel.value(
+            tuple(
+                scientific_meta + [
+                    stage         : 'analysis_plan',
+                    artifact_type : 'analysis_plan_yaml'
+                ],
+                reviewed_plan
+            )
+        )
+
+        reviewed_policy_artifact_ch = Channel.value(
+            tuple(
+                scientific_meta + [
+                    stage           : 'normalization_policy_review',
+                    artifact_type   : 'normalization_policy',
+                    approval_status : 'human_reviewed'
+                ],
+                reviewed_policy
+            )
+        )
+
+        NORMALIZATION_APPROVAL_PHASE(
+            plan_artifact_ch,
+            reviewed_policy_artifact_ch
+        )
+
+
+    /*
      * MODE: load_phase
      */
     } else if (params.mode == 'load_phase') {
@@ -1000,6 +1064,7 @@ workflow {
             - doublet_filter_phase
             - post_doublet_qc_summary_phase
             - normalization_policy_resolution_phase
+            - normalization_approval_phase
             - qc_process
             - load_phase
             - qc_filter_phase

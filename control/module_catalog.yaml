@@ -102,6 +102,16 @@ artifact_types:
       Summary describing how a proposed normalization policy was
       resolved from the post-doublet readiness contract.
 
+  approved_normalization_policy:
+    description: >
+      Human-reviewed normalization policy validated for use by
+      NORMALIZATION.
+
+  normalization_policy_approval_summary:
+    description: >
+      Validation record containing reviewer identity, approval status,
+      timestamp and approved normalization strategy.
+
   qc_scored_seurat:
     description: >
       Seurat object after cell-cycle and dissociation scores have
@@ -906,6 +916,45 @@ modules:
 
     invalidates:
       - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
+  VALIDATE_NORMALIZATION_APPROVAL:
+    stage: qc_control
+    process_name: VALIDATE_NORMALIZATION_APPROVAL
+    mode: normalization_approval_phase
+    script: scripts/control/validate_normalization_approval.py
+    runtime_config: approved_normalization_policy.yaml
+
+    config_sections:
+      - plan
+      - experiment
+      - normalization_policy
+
+    input_artifacts:
+      - artifact_type: analysis_plan_yaml
+        source: validated_analysis_plan
+
+      - artifact_type: normalization_policy
+        source: human_reviewed_policy
+
+    output_artifacts:
+      - artifact_type: approved_normalization_policy
+        path: control/normalization_policy_approval/approved_normalization_policy.yaml
+
+      - artifact_type: normalization_policy_approval_summary
+        path: control/normalization_policy_approval/normalization_policy_approval.summary.tsv
+
+      - artifact_type: session_info
+        path: control/normalization_policy_approval/normalization_policy_approval.session.txt
+
+    checkpoint_after: PCC_NORMALIZATION_POLICY_APPROVED
+    resource_class: lightweight
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
       - NORMALIZATION
       - INTEGRATION
       - CLUSTERING
