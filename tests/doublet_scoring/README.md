@@ -5,7 +5,7 @@ execution using a fixed Seurat input object and a pinned Docker image.
 
 ## Validated environment
 
-- Pipeline branch: `feature/bbudy-qc-orchestration`
+- Pipeline branch: current QC orchestration feature branch
 - Docker image:
   `ghcr.io/jimmlucas/bioc-rnaseq-test01new2:v0.3.0`
 - Docker digest:

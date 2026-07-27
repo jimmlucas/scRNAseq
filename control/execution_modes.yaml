@@ -1,0 +1,114 @@
+schema_version: "1.0"
+
+pipeline:
+  id: scrna_seq
+  role: scientific_engine
+  description: >
+    Modular Nextflow/R pipeline for scRNA-seq, snRNA-seq and CITE-seq
+    analysis. The pipeline owns scientific execution, containers,
+    caching, validation and reproducible artifacts.
+
+architecture:
+  orchestrator_awareness: none
+  external_orchestration: supported
+  resume_strategy: nextflow_resume
+  decision_contract: explicit_policy_files
+
+  principles:
+    - Nextflow does not depend on any external agent.
+    - External supervisors invoke existing modes and consume published artifacts.
+    - Scientific decisions are represented as policy files.
+    - Reviewable policies must pass validation before they can be applied.
+    - Application phases never recalculate upstream decision proposals.
+
+policy_gates:
+
+  qc_thresholds:
+    proposal_mode: analysis_plan_qc_process
+    proposal_artifact: control/qc_thresholds/qc_threshold_policy.yaml
+    approval_mode: qc_threshold_approval_phase
+    approved_artifact: control/qc_threshold_approval/approved_qc_threshold_policy.yaml
+    application_mode: qc_filter_policy_phase
+    application_artifact: 01e_qc_filter_policy/seu_qc_filtered.rds
+    requires_human_review: true
+
+  doublets:
+    proposal_mode: doublet_policy_resolution_phase
+    proposal_artifact: control/doublet_policy/doublet_policy.yaml
+    approval_mode: doublet_approval_phase
+    approved_artifact: control/doublet_policy_approval/approved_doublet_policy.yaml
+    application_mode: doublet_filter_phase
+    application_artifact: 02_doublet_filter/seu_doublet_filtered.rds
+    requires_human_review: true
+
+  normalization:
+    proposal_mode: normalization_policy_resolution_phase
+    proposal_artifact: control/normalization_policy/normalization_policy.yaml
+    approval_mode: normalization_approval_phase
+    approved_artifact: control/normalization_policy_approval/approved_normalization_policy.yaml
+    application_mode: normalization_phase
+    application_artifact: null
+    requires_human_review: true
+    implementation_state: planned
+
+execution_modes:
+
+  phase_level:
+    description: >
+      Execute one scientific or control phase from explicit input artifacts.
+      This is the canonical interface for debugging, checkpoint recovery and
+      external orchestration.
+    modes:
+      - analysis_plan_qc_process
+      - qc_threshold_approval_phase
+      - qc_filter_policy_phase
+      - qc_visualization_policy_phase
+      - doublet_detection_scoring_phase
+      - doublet_policy_resolution_phase
+      - doublet_approval_phase
+      - doublet_filter_phase
+      - post_doublet_qc_summary_phase
+      - normalization_policy_resolution_phase
+      - normalization_approval_phase
+      - load_phase
+      - qc_filter_phase
+      - qc_phase_1
+      - qc_phase_2
+      - qc_visualization_phase
+      - doublet_phase
+      - qc_scores_phase
+
+  legacy_single_command_qc:
+    description: >
+      Execute the older QC process from a project config. This mode is kept
+      for compatibility while the plan-driven contract becomes canonical.
+    modes:
+      - qc_process
+
+  standalone_full:
+    description: >
+      Planned single-command execution mode for environments without an
+      external supervisor. It should consume explicit preapproved policy files
+      rather than auto-approve scientific decisions.
+    mode: full
+    implementation_state: planned
+    default_decision_mode: preapproved_policy_files
+
+external_supervisor_flow:
+  description: >
+    A supervisor can run one phase, inspect the artifacts, request human
+    review when a policy is proposed, write a reviewed policy file, then call
+    the next validation/application phase with -resume.
+  nextflow_is_authority_for:
+    - containers
+    - process execution
+    - cache and resume
+    - scientific validation
+    - published artifacts
+  supervisor_is_authority_for:
+    - artifact interpretation
+    - human review workflow
+    - reviewed policy file preparation
+    - selecting the next mode to invoke
+    - case history outside the pipeline
+

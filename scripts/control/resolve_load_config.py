@@ -16,7 +16,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "Resolve and validate the LOAD_DATA configuration "
-            "from a BBUDY analysis plan."
+            "from an analysis plan."
         )
     )
 

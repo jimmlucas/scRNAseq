@@ -4,17 +4,17 @@ include { QC_PHASE_1 }             from './subworkflow/qc_phase_1'
 include { QC_PHASE_2 }             from './subworkflow/qc_phase_2'
 include { qc_process }             from './subworkflow/qc_process'
 include { LOAD_PHASE }             from './subworkflow/load_phase'
-include { BBUDY_QC_PROCESS }       from './subworkflow/bbudy/bbudy_qc_process'
-include { QC_THRESHOLD_APPROVAL_PHASE } from './subworkflow/bbudy/qc_threshold_approval_phase'
-include { QC_FILTER_POLICY_PHASE } from './subworkflow/bbudy/qc_filter_policy_phase'
-include { QC_VISUALIZATION_POLICY_PHASE } from './subworkflow/bbudy/qc_visualization_policy_phase'
-include { DOUBLET_DETECTION_SCORING_PHASE } from './subworkflow/bbudy/doublet_detection_scoring_phase'
-include { DOUBLET_POLICY_RESOLUTION_PHASE } from './subworkflow/bbudy/doublet_policy_resolution_phase'
-include { DOUBLET_APPROVAL_PHASE } from './subworkflow/bbudy/doublet_approval_phase'
-include { DOUBLET_FILTER_PHASE } from './subworkflow/bbudy/doublet_filter_phase'
-include { POST_DOUBLET_QC_SUMMARY_PHASE } from './subworkflow/bbudy/post_doublet_qc_summary_phase'
-include { NORMALIZATION_POLICY_RESOLUTION_PHASE } from './subworkflow/bbudy/normalization_policy_resolution_phase'
-include { NORMALIZATION_APPROVAL_PHASE } from './subworkflow/bbudy/normalization_approval_phase'
+include { ANALYSIS_PLAN_QC_PROCESS } from './subworkflow/control/analysis_plan_qc_process'
+include { QC_THRESHOLD_APPROVAL_PHASE } from './subworkflow/control/qc_threshold_approval_phase'
+include { QC_FILTER_POLICY_PHASE } from './subworkflow/control/qc_filter_policy_phase'
+include { QC_VISUALIZATION_POLICY_PHASE } from './subworkflow/control/qc_visualization_policy_phase'
+include { DOUBLET_DETECTION_SCORING_PHASE } from './subworkflow/control/doublet_detection_scoring_phase'
+include { DOUBLET_POLICY_RESOLUTION_PHASE } from './subworkflow/control/doublet_policy_resolution_phase'
+include { DOUBLET_APPROVAL_PHASE } from './subworkflow/control/doublet_approval_phase'
+include { DOUBLET_FILTER_PHASE } from './subworkflow/control/doublet_filter_phase'
+include { POST_DOUBLET_QC_SUMMARY_PHASE } from './subworkflow/control/post_doublet_qc_summary_phase'
+include { NORMALIZATION_POLICY_RESOLUTION_PHASE } from './subworkflow/control/normalization_policy_resolution_phase'
+include { NORMALIZATION_APPROVAL_PHASE } from './subworkflow/control/normalization_approval_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -47,19 +47,19 @@ workflow {
     scientific_meta_ch = Channel.value(scientific_meta)
 
     /*
-     * MODE: bbudy_qc_process
+     * MODE: analysis_plan_qc_process
      *
-     * New plan-driven QC orchestration.
+     * Plan-driven QC orchestration.
      *
      * The analysis plan defines the experiment structure,
      * enabled modules and decisions requiring approval.
      */
 
-    if (params.mode == 'bbudy_qc_process') {
+    if (params.mode == 'analysis_plan_qc_process') {
 
         if (!params.analysis_plan) {
             error """
-            The bbudy_qc_process mode requires:
+            The analysis_plan_qc_process mode requires:
 
             --analysis_plan <path_to_analysis_plan.yaml>
             """.stripIndent()
@@ -72,7 +72,7 @@ workflow {
             )
         )
 
-        BBUDY_QC_PROCESS(
+        ANALYSIS_PLAN_QC_PROCESS(
             scientific_meta_ch,
             analysis_plan_ch
         )
@@ -191,7 +191,7 @@ workflow {
      * MODE: qc_visualization_policy_phase
      *
      * Generate traceable before/after QC visualizations from
-     * previously published BBUDY artifacts.
+     * previously published control artifacts.
      */
     } else if (
         params.mode == 'qc_visualization_policy_phase'
@@ -1056,7 +1056,7 @@ workflow {
 
             Available modes:
 
-            - bbudy_qc_process
+            - analysis_plan_qc_process
             - qc_threshold_approval_phase
             - qc_filter_policy_phase
             - qc_visualization_policy_phase

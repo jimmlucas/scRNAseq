@@ -66,7 +66,7 @@ ROUTING_MODULES = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Validate a BBUDY single-cell analysis plan."
+        description="Validate a single-cell analysis plan."
     )
     parser.add_argument(
         "--plan",

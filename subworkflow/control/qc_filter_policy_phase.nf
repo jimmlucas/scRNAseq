@@ -21,7 +21,7 @@ workflow QC_FILTER_POLICY_PHASE {
     )
 
     /*
-     * Reconstruct the BBUDY artifact contracts when starting from
+     * Reconstruct artifact contracts when starting from
      * previously published checkpoint files.
      */
 

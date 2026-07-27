@@ -8,7 +8,7 @@ include { LOAD_DATA }                from '../../modules/load'
 include { QC_METRICS }               from '../../modules/qc_metrics'
 include { QC_THRESHOLD_RESOLUTION }  from '../../modules/control/resolve_qc_thresholds'
 
-workflow BBUDY_QC_PROCESS {
+workflow ANALYSIS_PLAN_QC_PROCESS {
 
     take:
 

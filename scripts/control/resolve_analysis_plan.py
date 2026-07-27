@@ -26,7 +26,7 @@ ROUTING_TO_PIPELINE_MODULE = {
 }
 
 
-# This records the state of the new BBUDY-oriented architecture.
+# This records the state of the plan-driven pipeline architecture.
 #
 # available:
 #   A usable Nextflow implementation currently exists.
@@ -61,7 +61,7 @@ APPROVAL_ROUTE_MAP = {
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Resolve requested BBUDY analysis routes against "
+            "Resolve requested analysis routes against "
             "the current Nextflow implementation."
         )
     )

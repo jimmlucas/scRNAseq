@@ -11,7 +11,7 @@ artifact_types:
 
   analysis_plan_yaml:
     description: >
-      Validated BBUDY analysis plan containing experiment metadata,
+      Validated analysis plan containing experiment metadata,
       requested routes and approval policies.
 
   resolved_analysis_routing:
@@ -22,7 +22,7 @@ artifact_types:
   resolved_load_config:
     description: >
       Runtime LOAD_DATA configuration resolved from a validated
-      BBUDY analysis plan.
+      analysis plan.
 
   input_inventory:
     description: >
@@ -165,7 +165,7 @@ modules:
   INPUT_DISCOVERY:
     stage: input
     process_name: INPUT_DISCOVERY
-    mode: bbudy_qc_process
+    mode: analysis_plan_qc_process
     script: scripts/control/input_discovery.py
     runtime_config: analysis_plan.yaml
 
@@ -266,7 +266,7 @@ modules:
   QC_METRICS:
     stage: qc
     process_name: QC_METRICS
-    mode: bbudy_qc_process
+    mode: analysis_plan_qc_process
     script: scripts/01a_qc_metrics.R
     runtime_config: analysis_plan.yaml
 
@@ -317,7 +317,7 @@ modules:
   QC_THRESHOLD_RESOLUTION:
     stage: qc
     process_name: QC_THRESHOLD_RESOLUTION
-    mode: bbudy_qc_process
+    mode: analysis_plan_qc_process
     script: scripts/control/resolve_qc_thresholds.py
     runtime_config: analysis_plan.yaml
 

@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
         "--plan",
         required=True,
         type=Path,
-        help="Validated BBUDY analysis plan YAML.",
+        help="Validated analysis plan YAML.",
     )
     parser.add_argument(
         "--policy",
