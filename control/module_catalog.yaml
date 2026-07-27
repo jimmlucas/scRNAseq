@@ -200,6 +200,17 @@ artifact_types:
       Validation record containing reviewer identity, approval status,
       timestamp, proposed PCs and selected PCs.
 
+  integration_policy:
+    description: >
+      Proposed or approved policy describing whether integration is required,
+      which method should be used and which reduction/dimensions downstream
+      phases should consume.
+
+  integration_policy_resolution:
+    description: >
+      Summary describing how a proposed integration policy was resolved from
+      PCA evidence, readiness, selected PCs and applied normalization.
+
   qc_scored_seurat:
     description: >
       Seurat object after cell-cycle and dissociation scores have
@@ -1226,6 +1237,58 @@ modules:
         path: control/pc_selection_policy_approval/pc_selection_policy_approval.session.txt
 
     checkpoint_after: PCC_PC_SELECTION_APPROVAL
+    resource_class: lightweight
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - INTEGRATION
+      - CLUSTERING
+      - MARKERS
+      - ANNOTATION
+      - DIFFERENTIAL_EXPRESSION
+      - PATHWAY_ANALYSIS
+
+  INTEGRATION_POLICY_RESOLUTION:
+    stage: integration
+    process_name: INTEGRATION_POLICY_RESOLUTION
+    mode: integration_policy_resolution_phase
+    script: scripts/control/resolve_integration_policy.py
+    runtime_config: integration_policy_inputs
+
+    config_sections:
+      - integration_policy
+
+    input_artifacts:
+      - artifact_type: pca_seurat
+        path: 05_dimensionality/seu_pca.rds
+
+      - artifact_type: dimensionality_summary
+        path: 05_dimensionality/05_dimensionality_summary.csv
+
+      - artifact_type: approved_pc_selection_policy
+        path: control/pc_selection_policy_approval/approved_pc_selection_policy.yaml
+
+      - artifact_type: analysis_readiness
+        path: 03_post_doublet_qc/03_analysis_readiness.yaml
+
+      - artifact_type: applied_normalization_policy
+        path: 04_normalization/applied_normalization_policy.yaml
+
+    output_artifacts:
+      - artifact_type: integration_policy
+        path: control/integration_policy/integration_policy.yaml
+
+      - artifact_type: integration_policy
+        path: control/integration_policy/integration_policy.tsv
+
+      - artifact_type: integration_policy_resolution
+        path: control/integration_policy/integration_policy_resolution.summary.tsv
+
+      - artifact_type: session_info
+        path: control/integration_policy/integration_policy_resolution.session.txt
+
+    checkpoint_after: PCC_INTEGRATION_POLICY_RESOLUTION
     resource_class: lightweight
     can_start_from: true
     can_resume_from_output: true

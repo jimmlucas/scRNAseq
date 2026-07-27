@@ -265,9 +265,11 @@ DIMENSIONALITY
 PC_SELECTION_POLICY_RESOLUTION
         ↓
 VALIDATE_PC_SELECTION_APPROVAL
+        ↓
+INTEGRATION_POLICY_RESOLUTION
 ```
 
-The next scientific block is integration policy resolution.
+The next scientific block is integration approval validation.
 
 ## Policy Pattern
 
@@ -294,6 +296,7 @@ QC thresholds
 Doublet filtering
 Normalization strategy
 PC selection
+Integration strategy
 ```
 
 Application phases must not recalculate decision proposals. They consume only
@@ -353,6 +356,7 @@ normalization_phase
 dimensionality_phase
 pc_selection_policy_resolution_phase
 pc_selection_approval_phase
+integration_policy_resolution_phase
 ```
 
 Legacy standalone modes are still present while the plan-driven contract
@@ -420,6 +424,7 @@ tests/normalization/run_test.sh
 tests/dimensionality/run_test.sh
 tests/pc_selection_policy/run_test.sh
 tests/pc_selection_approval/run_tests.sh
+tests/integration_policy/run_test.sh
 ```
 
 Several tests require Docker and the pinned R/Python images.

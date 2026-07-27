@@ -19,6 +19,7 @@ include { NORMALIZATION_PHASE } from './subworkflow/control/normalization_phase'
 include { DIMENSIONALITY_PHASE } from './subworkflow/control/dimensionality_phase'
 include { PC_SELECTION_POLICY_RESOLUTION_PHASE } from './subworkflow/control/pc_selection_policy_resolution_phase'
 include { PC_SELECTION_APPROVAL_PHASE } from './subworkflow/control/pc_selection_approval_phase'
+include { INTEGRATION_POLICY_RESOLUTION_PHASE } from './subworkflow/control/integration_policy_resolution_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -905,6 +906,103 @@ workflow {
 
 
     /*
+     * MODE: integration_policy_resolution_phase
+     *
+     * Resolve a proposed human-reviewable integration policy from
+     * PCA evidence, approved PC selection, readiness and applied
+     * normalization. This phase does not execute Harmony, Seurat
+     * integration, neighbors, UMAP or clustering.
+     */
+    } else if (
+        params.mode == 'integration_policy_resolution_phase'
+    ) {
+
+        if (!params.input_object) {
+            error """
+            The integration_policy_resolution_phase mode requires:
+
+            --input_object <path_to_seu_pca.rds>
+            """.stripIndent()
+        }
+
+        if (!params.dimensionality_summary) {
+            error """
+            The integration_policy_resolution_phase mode requires:
+
+            --dimensionality_summary <path_to_05_dimensionality_summary.csv>
+            """.stripIndent()
+        }
+
+        if (!params.approved_pc_selection_policy) {
+            error """
+            The integration_policy_resolution_phase mode requires:
+
+            --approved_pc_selection_policy <path_to_approved_pc_selection_policy.yaml>
+            """.stripIndent()
+        }
+
+        if (!params.analysis_readiness) {
+            error """
+            The integration_policy_resolution_phase mode requires:
+
+            --analysis_readiness <path_to_03_analysis_readiness.yaml>
+            """.stripIndent()
+        }
+
+        if (!params.applied_normalization_policy) {
+            error """
+            The integration_policy_resolution_phase mode requires:
+
+            --applied_normalization_policy <path_to_applied_normalization_policy.yaml>
+            """.stripIndent()
+        }
+
+        pca_object_ch = Channel.value(
+            file(
+                params.input_object,
+                checkIfExists: true
+            )
+        )
+
+        dimensionality_summary_ch = Channel.value(
+            file(
+                params.dimensionality_summary,
+                checkIfExists: true
+            )
+        )
+
+        approved_pc_selection_policy_ch = Channel.value(
+            file(
+                params.approved_pc_selection_policy,
+                checkIfExists: true
+            )
+        )
+
+        analysis_readiness_ch = Channel.value(
+            file(
+                params.analysis_readiness,
+                checkIfExists: true
+            )
+        )
+
+        applied_normalization_policy_ch = Channel.value(
+            file(
+                params.applied_normalization_policy,
+                checkIfExists: true
+            )
+        )
+
+        INTEGRATION_POLICY_RESOLUTION_PHASE(
+            scientific_meta_ch,
+            pca_object_ch,
+            dimensionality_summary_ch,
+            approved_pc_selection_policy_ch,
+            analysis_readiness_ch,
+            applied_normalization_policy_ch
+        )
+
+
+    /*
      * MODE: load_phase
      */
     } else if (params.mode == 'load_phase') {
@@ -1298,6 +1396,7 @@ workflow {
             - dimensionality_phase
             - pc_selection_policy_resolution_phase
             - pc_selection_approval_phase
+            - integration_policy_resolution_phase
             - qc_process
             - load_phase
             - qc_filter_phase

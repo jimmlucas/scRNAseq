@@ -140,6 +140,18 @@ policy_gates:
       The selected number of PCs affects neighbors, UMAP, clustering and
       integration, so the resolver only proposes a policy for review.
 
+  integration:
+    proposal_mode: integration_policy_resolution_phase
+    proposal_artifact: control/integration_policy/integration_policy.yaml
+    requires_human_review: true
+    implementation_state: available
+    allowed_methods:
+      - none
+      - Harmony
+    planned_methods:
+      - SeuratIntegration
+      - WNN
+
 execution_modes:
 
   phase_level:
@@ -163,6 +175,7 @@ execution_modes:
       - dimensionality_phase
       - pc_selection_policy_resolution_phase
       - pc_selection_approval_phase
+      - integration_policy_resolution_phase
       - load_phase
       - qc_filter_phase
       - qc_phase_1
