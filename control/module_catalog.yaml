@@ -190,6 +190,16 @@ artifact_types:
       Summary describing how a proposed PC-selection policy was resolved
       from dimensionality metrics.
 
+  approved_pc_selection_policy:
+    description: >
+      Human-reviewed PC-selection policy validated for use by downstream
+      neighborhood, UMAP, clustering or integration phases.
+
+  pc_selection_policy_approval_summary:
+    description: >
+      Validation record containing reviewer identity, approval status,
+      timestamp, proposed PCs and selected PCs.
+
   qc_scored_seurat:
     description: >
       Seurat object after cell-cycle and dissociation scores have
@@ -1176,6 +1186,46 @@ modules:
         path: control/pc_selection_policy/pc_selection_policy_resolution.session.txt
 
     checkpoint_after: PCC_PC_SELECTION_POLICY_RESOLUTION
+    resource_class: lightweight
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - INTEGRATION
+      - CLUSTERING
+      - MARKERS
+      - ANNOTATION
+      - DIFFERENTIAL_EXPRESSION
+      - PATHWAY_ANALYSIS
+
+  VALIDATE_PC_SELECTION_APPROVAL:
+    stage: pc_selection
+    process_name: VALIDATE_PC_SELECTION_APPROVAL
+    mode: pc_selection_approval_phase
+    script: scripts/control/validate_pc_selection_approval.py
+    runtime_config: approved_pc_selection_policy.yaml
+
+    config_sections:
+      - pc_selection_policy
+
+    input_artifacts:
+      - artifact_type: analysis_plan_yaml
+        source: validated_analysis_plan
+
+      - artifact_type: pc_selection_policy
+        path: control/pc_selection_policy/pc_selection_policy.yaml
+
+    output_artifacts:
+      - artifact_type: approved_pc_selection_policy
+        path: control/pc_selection_policy_approval/approved_pc_selection_policy.yaml
+
+      - artifact_type: pc_selection_policy_approval_summary
+        path: control/pc_selection_policy_approval/pc_selection_policy_approval.summary.tsv
+
+      - artifact_type: session_info
+        path: control/pc_selection_policy_approval/pc_selection_policy_approval.session.txt
+
+    checkpoint_after: PCC_PC_SELECTION_APPROVAL
     resource_class: lightweight
     can_start_from: true
     can_resume_from_output: true

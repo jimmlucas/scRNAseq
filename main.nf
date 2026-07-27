@@ -18,6 +18,7 @@ include { NORMALIZATION_APPROVAL_PHASE } from './subworkflow/control/normalizati
 include { NORMALIZATION_PHASE } from './subworkflow/control/normalization_phase'
 include { DIMENSIONALITY_PHASE } from './subworkflow/control/dimensionality_phase'
 include { PC_SELECTION_POLICY_RESOLUTION_PHASE } from './subworkflow/control/pc_selection_policy_resolution_phase'
+include { PC_SELECTION_APPROVAL_PHASE } from './subworkflow/control/pc_selection_approval_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -841,6 +842,69 @@ workflow {
 
 
     /*
+     * MODE: pc_selection_approval_phase
+     *
+     * Validate a human-reviewed PC-selection policy. This phase does
+     * not run neighbors, UMAP, clustering or integration.
+     */
+    } else if (
+        params.mode == 'pc_selection_approval_phase'
+    ) {
+
+        if (!params.analysis_plan) {
+            error """
+            The pc_selection_approval_phase mode requires:
+
+            --analysis_plan <path_to_analysis_plan.yaml>
+            """.stripIndent()
+        }
+
+        if (!params.approved_pc_selection_policy) {
+            error """
+            The pc_selection_approval_phase mode requires:
+
+            --approved_pc_selection_policy <path_to_reviewed_pc_selection_policy.yaml>
+            """.stripIndent()
+        }
+
+        reviewed_plan = file(
+            params.analysis_plan,
+            checkIfExists: true
+        )
+
+        reviewed_policy = file(
+            params.approved_pc_selection_policy,
+            checkIfExists: true
+        )
+
+        plan_artifact_ch = Channel.value(
+            tuple(
+                scientific_meta + [
+                    stage         : 'analysis_plan',
+                    artifact_type : 'analysis_plan_yaml'
+                ],
+                reviewed_plan
+            )
+        )
+
+        reviewed_policy_artifact_ch = Channel.value(
+            tuple(
+                scientific_meta + [
+                    stage           : 'pc_selection_policy_review',
+                    artifact_type   : 'pc_selection_policy',
+                    approval_status : 'human_reviewed'
+                ],
+                reviewed_policy
+            )
+        )
+
+        PC_SELECTION_APPROVAL_PHASE(
+            plan_artifact_ch,
+            reviewed_policy_artifact_ch
+        )
+
+
+    /*
      * MODE: load_phase
      */
     } else if (params.mode == 'load_phase') {
@@ -1233,6 +1297,7 @@ workflow {
             - normalization_phase
             - dimensionality_phase
             - pc_selection_policy_resolution_phase
+            - pc_selection_approval_phase
             - qc_process
             - load_phase
             - qc_filter_phase

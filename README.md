@@ -263,9 +263,11 @@ NORMALIZATION
 DIMENSIONALITY
         ↓
 PC_SELECTION_POLICY_RESOLUTION
+        ↓
+VALIDATE_PC_SELECTION_APPROVAL
 ```
 
-The next scientific blocks are PC-selection approval and integration policy.
+The next scientific block is integration policy resolution.
 
 ## Policy Pattern
 
@@ -350,6 +352,7 @@ normalization_approval_phase
 normalization_phase
 dimensionality_phase
 pc_selection_policy_resolution_phase
+pc_selection_approval_phase
 ```
 
 Legacy standalone modes are still present while the plan-driven contract
@@ -416,6 +419,7 @@ tests/normalization_policy/run_test.sh
 tests/normalization/run_test.sh
 tests/dimensionality/run_test.sh
 tests/pc_selection_policy/run_test.sh
+tests/pc_selection_approval/run_tests.sh
 ```
 
 Several tests require Docker and the pinned R/Python images.

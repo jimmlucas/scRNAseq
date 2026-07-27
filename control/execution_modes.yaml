@@ -132,6 +132,8 @@ policy_gates:
   pc_selection:
     proposal_mode: pc_selection_policy_resolution_phase
     proposal_artifact: control/pc_selection_policy/pc_selection_policy.yaml
+    approval_mode: pc_selection_approval_phase
+    approved_artifact: control/pc_selection_policy_approval/approved_pc_selection_policy.yaml
     requires_human_review: true
     implementation_state: available
     decision_boundary: >
@@ -160,6 +162,7 @@ execution_modes:
       - normalization_phase
       - dimensionality_phase
       - pc_selection_policy_resolution_phase
+      - pc_selection_approval_phase
       - load_phase
       - qc_filter_phase
       - qc_phase_1
