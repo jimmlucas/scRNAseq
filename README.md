@@ -381,6 +381,12 @@ control/execution_modes.yaml
 control/module_catalog.yaml
 ```
 
+The current pre-integration standalone validation milestone is documented in:
+
+```text
+docs/standalone_real_data_validation.md
+```
+
 ## Containers
 
 R analysis uses:
