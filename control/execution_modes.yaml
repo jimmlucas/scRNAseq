@@ -129,6 +129,15 @@ policy_gates:
       Scaling and PCA are technical, reproducible preparation steps.
       Later integration choices should use the published PCA evidence.
 
+  pc_selection:
+    proposal_mode: pc_selection_policy_resolution_phase
+    proposal_artifact: control/pc_selection_policy/pc_selection_policy.yaml
+    requires_human_review: true
+    implementation_state: available
+    decision_boundary: >
+      The selected number of PCs affects neighbors, UMAP, clustering and
+      integration, so the resolver only proposes a policy for review.
+
 execution_modes:
 
   phase_level:
@@ -150,6 +159,7 @@ execution_modes:
       - normalization_approval_phase
       - normalization_phase
       - dimensionality_phase
+      - pc_selection_policy_resolution_phase
       - load_phase
       - qc_filter_phase
       - qc_phase_1

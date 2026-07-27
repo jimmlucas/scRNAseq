@@ -17,6 +17,7 @@ include { NORMALIZATION_POLICY_RESOLUTION_PHASE } from './subworkflow/control/no
 include { NORMALIZATION_APPROVAL_PHASE } from './subworkflow/control/normalization_approval_phase'
 include { NORMALIZATION_PHASE } from './subworkflow/control/normalization_phase'
 include { DIMENSIONALITY_PHASE } from './subworkflow/control/dimensionality_phase'
+include { PC_SELECTION_POLICY_RESOLUTION_PHASE } from './subworkflow/control/pc_selection_policy_resolution_phase'
 include { QC_FILTER_PHASE }        from './subworkflow/qc_filter_phase'
 include { QC_VISUALIZATION_PHASE } from './subworkflow/qc_visualization_phase'
 include { DOUBLET_PHASE }          from './subworkflow/doublet_phase'
@@ -776,6 +777,70 @@ workflow {
 
 
     /*
+     * MODE: pc_selection_policy_resolution_phase
+     *
+     * Resolve a proposed human-reviewable PC-selection policy from
+     * published PCA metrics. This phase does not run neighbors, UMAP,
+     * clustering or integration.
+     */
+    } else if (
+        params.mode == 'pc_selection_policy_resolution_phase'
+    ) {
+
+        if (!params.dimensionality_summary) {
+            error """
+            The pc_selection_policy_resolution_phase mode requires:
+
+            --dimensionality_summary <path_to_05_dimensionality_summary.csv>
+            """.stripIndent()
+        }
+
+        if (!params.variable_features_summary) {
+            error """
+            The pc_selection_policy_resolution_phase mode requires:
+
+            --variable_features_summary <path_to_05_variable_features_summary.csv>
+            """.stripIndent()
+        }
+
+        if (!params.pca_elbow_metrics) {
+            error """
+            The pc_selection_policy_resolution_phase mode requires:
+
+            --pca_elbow_metrics <path_to_05_pca_elbow_metrics.csv>
+            """.stripIndent()
+        }
+
+        dimensionality_summary_ch = Channel.value(
+            file(
+                params.dimensionality_summary,
+                checkIfExists: true
+            )
+        )
+
+        variable_features_ch = Channel.value(
+            file(
+                params.variable_features_summary,
+                checkIfExists: true
+            )
+        )
+
+        elbow_metrics_ch = Channel.value(
+            file(
+                params.pca_elbow_metrics,
+                checkIfExists: true
+            )
+        )
+
+        PC_SELECTION_POLICY_RESOLUTION_PHASE(
+            scientific_meta_ch,
+            dimensionality_summary_ch,
+            variable_features_ch,
+            elbow_metrics_ch
+        )
+
+
+    /*
      * MODE: load_phase
      */
     } else if (params.mode == 'load_phase') {
@@ -1167,6 +1232,7 @@ workflow {
             - normalization_approval_phase
             - normalization_phase
             - dimensionality_phase
+            - pc_selection_policy_resolution_phase
             - qc_process
             - load_phase
             - qc_filter_phase

@@ -261,9 +261,11 @@ VALIDATE_NORMALIZATION_APPROVAL
 NORMALIZATION
         ↓
 DIMENSIONALITY
+        ↓
+PC_SELECTION_POLICY_RESOLUTION
 ```
 
-The next scientific blocks are post-PCA readiness and integration policy.
+The next scientific blocks are PC-selection approval and integration policy.
 
 ## Policy Pattern
 
@@ -289,6 +291,7 @@ This pattern is already used for:
 QC thresholds
 Doublet filtering
 Normalization strategy
+PC selection
 ```
 
 Application phases must not recalculate decision proposals. They consume only
@@ -297,6 +300,9 @@ validated policy files.
 Technical phases without a new scientific decision, such as scaling variable
 features and PCA, stay as deterministic application phases. They publish
 evidence for later decisions but do not introduce unnecessary approval gates.
+
+PC selection is deliberately separated from PCA calculation because the chosen
+number of PCs affects neighbors, UMAP, clustering and integration.
 
 ## Execution Modes
 
@@ -343,6 +349,7 @@ normalization_policy_resolution_phase
 normalization_approval_phase
 normalization_phase
 dimensionality_phase
+pc_selection_policy_resolution_phase
 ```
 
 Legacy standalone modes are still present while the plan-driven contract
@@ -408,6 +415,7 @@ tests/post_doublet_qc/run_test.sh
 tests/normalization_policy/run_test.sh
 tests/normalization/run_test.sh
 tests/dimensionality/run_test.sh
+tests/pc_selection_policy/run_test.sh
 ```
 
 Several tests require Docker and the pinned R/Python images.

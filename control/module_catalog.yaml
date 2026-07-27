@@ -180,6 +180,16 @@ artifact_types:
       Per-PC standard deviation and explained-variance metrics used to
       support downstream PC and integration decisions.
 
+  pc_selection_policy:
+    description: >
+      Proposed or approved policy describing how many principal components
+      downstream neighborhood, UMAP, clustering or integration phases may use.
+
+  pc_selection_policy_resolution:
+    description: >
+      Summary describing how a proposed PC-selection policy was resolved
+      from dimensionality metrics.
+
   qc_scored_seurat:
     description: >
       Seurat object after cell-cycle and dissociation scores have
@@ -1121,6 +1131,52 @@ modules:
 
     checkpoint_after: PCC_DIMENSIONALITY
     resource_class: high_memory
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - INTEGRATION
+      - CLUSTERING
+      - MARKERS
+      - ANNOTATION
+      - DIFFERENTIAL_EXPRESSION
+      - PATHWAY_ANALYSIS
+
+  PC_SELECTION_POLICY_RESOLUTION:
+    stage: pc_selection
+    process_name: PC_SELECTION_POLICY_RESOLUTION
+    mode: pc_selection_policy_resolution_phase
+    script: scripts/control/resolve_pc_selection_policy.py
+    runtime_config: dimensionality_metrics
+
+    config_sections:
+      - pc_selection_policy
+
+    input_artifacts:
+      - artifact_type: dimensionality_summary
+        path: 05_dimensionality/05_dimensionality_summary.csv
+
+      - artifact_type: variable_features
+        path: 05_dimensionality/05_variable_features_summary.csv
+
+      - artifact_type: pca_elbow_metrics
+        path: 05_dimensionality/05_pca_elbow_metrics.csv
+
+    output_artifacts:
+      - artifact_type: pc_selection_policy
+        path: control/pc_selection_policy/pc_selection_policy.yaml
+
+      - artifact_type: pc_selection_policy
+        path: control/pc_selection_policy/pc_selection_policy.tsv
+
+      - artifact_type: pc_selection_policy_resolution
+        path: control/pc_selection_policy/pc_selection_policy_resolution.summary.tsv
+
+      - artifact_type: session_info
+        path: control/pc_selection_policy/pc_selection_policy_resolution.session.txt
+
+    checkpoint_after: PCC_PC_SELECTION_POLICY_RESOLUTION
+    resource_class: lightweight
     can_start_from: true
     can_resume_from_output: true
 
