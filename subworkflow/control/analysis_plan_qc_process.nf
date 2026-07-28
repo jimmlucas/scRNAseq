@@ -7,6 +7,7 @@ include { RESOLVE_LOAD_CONFIG }      from '../../modules/control/resolve_load_co
 include { LOAD_DATA }                from '../../modules/load'
 include { QC_METRICS }               from '../../modules/qc_metrics'
 include { QC_THRESHOLD_RESOLUTION }  from '../../modules/control/resolve_qc_thresholds'
+include { QC_THRESHOLD_IMPACT_SUMMARY } from '../../modules/control/qc_threshold_impact_summary'
 
 workflow ANALYSIS_PLAN_QC_PROCESS {
 
@@ -85,6 +86,13 @@ workflow ANALYSIS_PLAN_QC_PROCESS {
         )
     )
 
+    qc_threshold_impact_script_ch = channel.value(
+        file(
+            "${projectDir}/scripts/control/summarize_qc_threshold_impact.py",
+            checkIfExists: true
+        )
+    )
+
     VALIDATE_ANALYSIS_PLAN(
         plan_artifact_ch,
         validation_script_ch
@@ -128,6 +136,13 @@ workflow ANALYSIS_PLAN_QC_PROCESS {
         qc_threshold_resolution_script_ch
     )
 
+    QC_THRESHOLD_IMPACT_SUMMARY(
+        QC_THRESHOLD_RESOLUTION.out.policy_yaml,
+        QC_METRICS.out.cell_metadata,
+        QC_METRICS.out.by_sample,
+        qc_threshold_impact_script_ch
+    )
+
     emit:
 
     validated_plan = VALIDATE_ANALYSIS_PLAN.out.validated_plan
@@ -167,5 +182,23 @@ workflow ANALYSIS_PLAN_QC_PROCESS {
 
     qc_threshold_resolution_session_info =
         QC_THRESHOLD_RESOLUTION.out.session_info
+
+    qc_threshold_impact_yaml =
+        QC_THRESHOLD_IMPACT_SUMMARY.out.impact_yaml
+
+    qc_threshold_impact_by_sample =
+        QC_THRESHOLD_IMPACT_SUMMARY.out.by_sample
+
+    qc_threshold_impact_by_metric =
+        QC_THRESHOLD_IMPACT_SUMMARY.out.by_metric
+
+    qc_threshold_overlap_summary =
+        QC_THRESHOLD_IMPACT_SUMMARY.out.overlap
+
+    qc_threshold_impact_summary =
+        QC_THRESHOLD_IMPACT_SUMMARY.out.summary
+
+    qc_threshold_impact_session_info =
+        QC_THRESHOLD_IMPACT_SUMMARY.out.session_info
 
 }

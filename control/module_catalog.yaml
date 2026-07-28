@@ -405,6 +405,7 @@ modules:
 
     invalidates:
       - QC_THRESHOLD_RESOLUTION
+      - QC_THRESHOLD_IMPACT_SUMMARY
       - QC_FILTER
       - QC_VISUALIZATION
       - QC_DOUBLET_DETECTION
@@ -453,6 +454,60 @@ modules:
         path: control/qc_thresholds/qc_threshold_resolution.session.txt
 
     checkpoint_after: PCC_QC_THRESHOLD_RESOLUTION
+    resource_class: lightweight
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - QC_THRESHOLD_IMPACT_SUMMARY
+      - QC_FILTER
+      - QC_VISUALIZATION
+      - QC_DOUBLET_DETECTION
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
+  QC_THRESHOLD_IMPACT_SUMMARY:
+    stage: qc_control
+    process_name: QC_THRESHOLD_IMPACT_SUMMARY
+    mode: analysis_plan_qc_process
+    script: scripts/control/summarize_qc_threshold_impact.py
+    runtime_config: qc_threshold_policy.yaml
+
+    config_sections:
+      - qc_threshold_policy
+
+    input_artifacts:
+      - artifact_type: qc_threshold_policy
+        path: control/qc_thresholds/qc_threshold_policy.yaml
+
+      - artifact_type: cell_metadata
+        path: 01a_qc_metrics/01a_qc_metrics_cell_metadata.csv
+
+      - artifact_type: per_sample_metrics
+        path: 01a_qc_metrics/01a_qc_metrics_by_sample.csv
+
+    output_artifacts:
+      - artifact_type: qc_threshold_impact
+        path: control/qc_threshold_impact/qc_threshold_impact.yaml
+
+      - artifact_type: qc_threshold_impact_by_sample
+        path: control/qc_threshold_impact/qc_threshold_impact_by_sample.csv
+
+      - artifact_type: qc_threshold_impact_by_metric
+        path: control/qc_threshold_impact/qc_threshold_impact_by_metric.csv
+
+      - artifact_type: qc_threshold_overlap_summary
+        path: control/qc_threshold_impact/qc_threshold_overlap_summary.csv
+
+      - artifact_type: qc_threshold_impact_summary
+        path: control/qc_threshold_impact/qc_threshold_impact.summary.tsv
+
+      - artifact_type: session_info
+        path: control/qc_threshold_impact/qc_threshold_impact.session.txt
+
+    checkpoint_after: PCC_QC_THRESHOLD_IMPACT_SUMMARY
     resource_class: lightweight
     can_start_from: true
     can_resume_from_output: true

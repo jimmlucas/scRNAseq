@@ -240,6 +240,8 @@ QC_METRICS
         ↓
 QC_THRESHOLD_RESOLUTION
         ↓
+QC_THRESHOLD_IMPACT_SUMMARY
+        ↓
 VALIDATE_QC_THRESHOLD_APPROVAL
         ↓
 QC_FILTER_POLICY
@@ -268,6 +270,11 @@ VALIDATE_PC_SELECTION_APPROVAL
         ↓
 INTEGRATION_POLICY_RESOLUTION
 ```
+
+`QC_THRESHOLD_IMPACT_SUMMARY` is non-destructive. It simulates the
+consequence of a proposed QC policy before approval, publishing per-sample,
+per-metric and overlap summaries so a reviewer can judge the biological impact
+before `QC_FILTER_POLICY` removes any cells.
 
 The next scientific block is integration approval validation.
 
