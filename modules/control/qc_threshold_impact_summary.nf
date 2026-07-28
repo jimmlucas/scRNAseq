@@ -34,6 +34,12 @@ process QC_THRESHOLD_IMPACT_SUMMARY {
     tuple val(impact_meta), path("qc_threshold_overlap_summary.csv"),
         emit: overlap
 
+    tuple val(impact_meta), path("qc_lower_tail_by_sample.csv"),
+        emit: lower_tail_by_sample
+
+    tuple val(impact_meta), path("qc_lower_tail_summary.csv"),
+        emit: lower_tail_summary
+
     tuple val(summary_meta), path("qc_threshold_impact.summary.tsv"),
         emit: summary
 
@@ -62,6 +68,8 @@ process QC_THRESHOLD_IMPACT_SUMMARY {
         --by-sample-output qc_threshold_impact_by_sample.csv \
         --by-metric-output qc_threshold_impact_by_metric.csv \
         --overlap-output qc_threshold_overlap_summary.csv \
+        --lower-tail-by-sample-output qc_lower_tail_by_sample.csv \
+        --lower-tail-summary-output qc_lower_tail_summary.csv \
         --summary qc_threshold_impact.summary.tsv \
         --session-info qc_threshold_impact.session.txt \
         --project-id '${policy_meta.project_id ?: ""}' \
@@ -106,6 +114,14 @@ process QC_THRESHOLD_IMPACT_SUMMARY {
 
     cat > qc_threshold_overlap_summary.csv <<'CSV'
     metric_a,metric_b,metric_a_flagged,metric_b_flagged,flagged_both,flagged_union,overlap_fraction_of_metric_a,overlap_fraction_of_metric_b
+    CSV
+
+    cat > qc_lower_tail_by_sample.csv <<'CSV'
+    sample,Group,metric,threshold,cells_evaluated,cells_below_threshold,fraction_below_threshold
+    CSV
+
+    cat > qc_lower_tail_summary.csv <<'CSV'
+    metric,threshold,cells_evaluated,cells_below_threshold,fraction_below_threshold
     CSV
 
     cat > qc_threshold_impact.summary.tsv <<'TSV'

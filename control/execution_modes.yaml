@@ -99,6 +99,8 @@ policy_gates:
       by_sample: control/qc_threshold_impact/qc_threshold_impact_by_sample.csv
       by_metric: control/qc_threshold_impact/qc_threshold_impact_by_metric.csv
       overlap: control/qc_threshold_impact/qc_threshold_overlap_summary.csv
+      lower_tail_by_sample: control/qc_threshold_impact/qc_lower_tail_by_sample.csv
+      lower_tail_summary: control/qc_threshold_impact/qc_lower_tail_summary.csv
     approval_mode: qc_threshold_approval_phase
     approved_artifact: control/qc_threshold_approval/approved_qc_threshold_policy.yaml
     application_mode: qc_filter_policy_phase

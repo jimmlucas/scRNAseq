@@ -501,6 +501,12 @@ modules:
       - artifact_type: qc_threshold_overlap_summary
         path: control/qc_threshold_impact/qc_threshold_overlap_summary.csv
 
+      - artifact_type: qc_lower_tail_by_sample
+        path: control/qc_threshold_impact/qc_lower_tail_by_sample.csv
+
+      - artifact_type: qc_lower_tail_summary
+        path: control/qc_threshold_impact/qc_lower_tail_summary.csv
+
       - artifact_type: qc_threshold_impact_summary
         path: control/qc_threshold_impact/qc_threshold_impact.summary.tsv
 

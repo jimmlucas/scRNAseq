@@ -195,6 +195,12 @@ workflow ANALYSIS_PLAN_QC_PROCESS {
     qc_threshold_overlap_summary =
         QC_THRESHOLD_IMPACT_SUMMARY.out.overlap
 
+    qc_lower_tail_by_sample =
+        QC_THRESHOLD_IMPACT_SUMMARY.out.lower_tail_by_sample
+
+    qc_lower_tail_summary =
+        QC_THRESHOLD_IMPACT_SUMMARY.out.lower_tail_summary
+
     qc_threshold_impact_summary =
         QC_THRESHOLD_IMPACT_SUMMARY.out.summary
 

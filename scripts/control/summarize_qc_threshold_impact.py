@@ -62,6 +62,18 @@ def parse_args() -> argparse.Namespace:
         help="Output metric overlap CSV.",
     )
     parser.add_argument(
+        "--lower-tail-by-sample-output",
+        required=True,
+        type=Path,
+        help="Output lower-tail diagnostic by sample CSV.",
+    )
+    parser.add_argument(
+        "--lower-tail-summary-output",
+        required=True,
+        type=Path,
+        help="Output global lower-tail diagnostic CSV.",
+    )
+    parser.add_argument(
         "--summary",
         required=True,
         type=Path,
@@ -357,6 +369,32 @@ def write_summary_tsv(
         writer.writerow({key: row.get(key, "") for key in fieldnames})
 
 
+def lower_tail_thresholds(
+    columns: set[str],
+) -> dict[str, list[float]]:
+    probes = {
+        "nFeature_RNA": [
+            100.0,
+            200.0,
+            500.0,
+        ],
+        "nCount_RNA": [
+            500.0,
+            1000.0,
+        ],
+        "log10GenesPerUMI": [
+            0.80,
+            0.85,
+        ],
+    }
+
+    return {
+        metric: thresholds
+        for metric, thresholds in probes.items()
+        if metric in columns
+    }
+
+
 def main() -> int:
     args = parse_args()
 
@@ -402,6 +440,10 @@ def main() -> int:
                 f"Enabled QC metric is missing from metadata: {metric}"
             )
 
+    lower_tail_probes = lower_tail_thresholds(cell_columns)
+    lower_tail_by_sample: dict[tuple[str, str, float], dict[str, Any]] = {}
+    lower_tail_global: dict[tuple[str, float], dict[str, Any]] = {}
+
     for index, row in enumerate(cell_rows):
         cell_id = (
             row.get("cell")
@@ -429,6 +471,44 @@ def main() -> int:
         sample_record["cells_before"] += 1
 
         metric_flags: dict[str, bool] = {}
+
+        for metric, probe_thresholds in lower_tail_probes.items():
+            raw_value = row.get(metric)
+            value = parse_float(raw_value)
+
+            if value is None:
+                continue
+
+            for probe_threshold in probe_thresholds:
+                global_key = (metric, probe_threshold)
+                global_record = lower_tail_global.setdefault(
+                    global_key,
+                    {
+                        "metric": metric,
+                        "threshold": probe_threshold,
+                        "cells_evaluated": 0,
+                        "cells_below_threshold": 0,
+                    },
+                )
+                global_record["cells_evaluated"] += 1
+
+                sample_key = (sample, metric, probe_threshold)
+                sample_tail_record = lower_tail_by_sample.setdefault(
+                    sample_key,
+                    {
+                        "sample": sample,
+                        "Group": group,
+                        "metric": metric,
+                        "threshold": probe_threshold,
+                        "cells_evaluated": 0,
+                        "cells_below_threshold": 0,
+                    },
+                )
+                sample_tail_record["cells_evaluated"] += 1
+
+                if value < probe_threshold:
+                    global_record["cells_below_threshold"] += 1
+                    sample_tail_record["cells_below_threshold"] += 1
 
         for metric, bounds in thresholds.items():
             raw_value = row.get(metric)
@@ -551,6 +631,32 @@ def main() -> int:
 
     by_metric_rows = global_metric_rows + by_metric_rows
 
+    lower_tail_summary_rows = []
+
+    for metric, probe_threshold in sorted(lower_tail_global):
+        row = lower_tail_global[(metric, probe_threshold)]
+        cells_evaluated = int(row["cells_evaluated"])
+        cells_below = int(row["cells_below_threshold"])
+        row["fraction_below_threshold"] = ratio(
+            cells_below,
+            cells_evaluated,
+        )
+        lower_tail_summary_rows.append(row)
+
+    lower_tail_by_sample_rows = []
+
+    for sample, metric, probe_threshold in sorted(lower_tail_by_sample):
+        row = lower_tail_by_sample[
+            (sample, metric, probe_threshold)
+        ]
+        cells_evaluated = int(row["cells_evaluated"])
+        cells_below = int(row["cells_below_threshold"])
+        row["fraction_below_threshold"] = ratio(
+            cells_below,
+            cells_evaluated,
+        )
+        lower_tail_by_sample_rows.append(row)
+
     overlap_rows = []
 
     for metric_a, metric_b in itertools.combinations(
@@ -615,6 +721,12 @@ def main() -> int:
             "retained": retained,
             "flagged_fraction": summary_row["flagged_fraction"],
             "enabled_metrics": sorted(thresholds),
+            "lower_tail_diagnostics": {
+                "status": "available"
+                if lower_tail_probes
+                else "not_available",
+                "metrics": sorted(lower_tail_probes),
+            },
             "inputs": {
                 "policy_yaml": str(args.policy_yaml),
                 "cell_metadata": str(args.cell_metadata),
@@ -674,6 +786,30 @@ def main() -> int:
             "overlap_fraction_of_metric_b",
         ],
     )
+    write_csv(
+        args.lower_tail_summary_output,
+        lower_tail_summary_rows,
+        [
+            "metric",
+            "threshold",
+            "cells_evaluated",
+            "cells_below_threshold",
+            "fraction_below_threshold",
+        ],
+    )
+    write_csv(
+        args.lower_tail_by_sample_output,
+        lower_tail_by_sample_rows,
+        [
+            "sample",
+            "Group",
+            "metric",
+            "threshold",
+            "cells_evaluated",
+            "cells_below_threshold",
+            "fraction_below_threshold",
+        ],
+    )
     write_summary_tsv(args.summary, summary_row)
 
     args.session_info.write_text(
@@ -686,6 +822,8 @@ def main() -> int:
                 f"cell_count={cell_count}",
                 f"flagged_any={flagged_any}",
                 f"enabled_metric_count={len(thresholds)}",
+                "lower_tail_metrics="
+                + ",".join(sorted(lower_tail_probes)),
             ]
         )
         + "\n",

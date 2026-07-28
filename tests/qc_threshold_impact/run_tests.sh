@@ -50,12 +50,12 @@ qc_threshold_policy:
 YAML
 
 cat > "${TMP_DIR}/cell_metadata.csv" <<'CSV'
-cell,sample,Group,nFeature_RNA,nCount_RNA,percent.mito,percent.ribo
-c1,S1,A,1000,2000,5,10
-c2,S1,A,100,2000,5,10
-c3,S1,A,6000,12000,5,10
-c4,S2,B,1000,2000,30,10
-c5,S2,B,7000,15000,30,10
+cell,sample,Group,nFeature_RNA,nCount_RNA,percent.mito,percent.ribo,log10GenesPerUMI
+c1,S1,A,1000,2000,5,10,0.90
+c2,S1,A,100,2000,5,10,0.70
+c3,S1,A,6000,12000,5,10,0.88
+c4,S2,B,1000,2000,30,10,0.92
+c5,S2,B,7000,15000,30,10,0.86
 CSV
 
 cat > "${TMP_DIR}/by_sample.csv" <<'CSV'
@@ -72,6 +72,8 @@ CSV
   --by-sample-output "${TMP_DIR}/qc_threshold_impact_by_sample.csv" \
   --by-metric-output "${TMP_DIR}/qc_threshold_impact_by_metric.csv" \
   --overlap-output "${TMP_DIR}/qc_threshold_overlap_summary.csv" \
+  --lower-tail-by-sample-output "${TMP_DIR}/qc_lower_tail_by_sample.csv" \
+  --lower-tail-summary-output "${TMP_DIR}/qc_lower_tail_summary.csv" \
   --summary "${TMP_DIR}/qc_threshold_impact.summary.tsv" \
   --session-info "${TMP_DIR}/qc_threshold_impact.session.txt" \
   --project-id TEST \
@@ -97,6 +99,12 @@ assert impact["enabled_metrics"] == [
     "nCount_RNA",
     "nFeature_RNA",
     "percent.mito",
+]
+assert impact["lower_tail_diagnostics"]["status"] == "available"
+assert impact["lower_tail_diagnostics"]["metrics"] == [
+    "log10GenesPerUMI",
+    "nCount_RNA",
+    "nFeature_RNA",
 ]
 
 with (base / "qc_threshold_impact_by_sample.csv").open(
@@ -153,6 +161,41 @@ with (base / "qc_threshold_overlap_summary.csv").open(
 key = ("nCount_RNA", "nFeature_RNA")
 assert int(overlap[key]["flagged_both"]) == 2
 
+with (base / "qc_lower_tail_summary.csv").open(
+    encoding="utf-8",
+    newline="",
+) as handle:
+    lower_tail = {
+        (row["metric"], row["threshold"]): row
+        for row in csv.DictReader(handle)
+    }
+
+assert int(lower_tail[("nFeature_RNA", "100.0")]["cells_below_threshold"]) == 0
+assert int(lower_tail[("nFeature_RNA", "200.0")]["cells_below_threshold"]) == 1
+assert int(lower_tail[("nFeature_RNA", "500.0")]["cells_below_threshold"]) == 1
+assert int(lower_tail[("nCount_RNA", "500.0")]["cells_below_threshold"]) == 0
+assert int(lower_tail[("nCount_RNA", "1000.0")]["cells_below_threshold"]) == 0
+
+with (base / "qc_lower_tail_by_sample.csv").open(
+    encoding="utf-8",
+    newline="",
+) as handle:
+    lower_tail_by_sample = {
+        (row["sample"], row["metric"], row["threshold"]): row
+        for row in csv.DictReader(handle)
+    }
+
+assert int(
+    lower_tail_by_sample[
+        ("S1", "nFeature_RNA", "200.0")
+    ]["cells_below_threshold"]
+) == 1
+assert int(
+    lower_tail_by_sample[
+        ("S2", "nFeature_RNA", "200.0")
+    ]["cells_below_threshold"]
+) == 0
+
 print("QC threshold impact contract: VALID")
 PY
 
@@ -164,6 +207,8 @@ if "${PYTHON_BIN}" "${ROOT_DIR}/scripts/control/summarize_qc_threshold_impact.py
   --by-sample-output "${TMP_DIR}/identity_by_sample.csv" \
   --by-metric-output "${TMP_DIR}/identity_by_metric.csv" \
   --overlap-output "${TMP_DIR}/identity_overlap.csv" \
+  --lower-tail-by-sample-output "${TMP_DIR}/identity_lower_tail_by_sample.csv" \
+  --lower-tail-summary-output "${TMP_DIR}/identity_lower_tail_summary.csv" \
   --summary "${TMP_DIR}/identity.summary.tsv" \
   --session-info "${TMP_DIR}/identity.session.txt" \
   --project-id WRONG \
@@ -188,6 +233,8 @@ if "${PYTHON_BIN}" "${ROOT_DIR}/scripts/control/summarize_qc_threshold_impact.py
   --by-sample-output "${TMP_DIR}/missing_metric_by_sample.csv" \
   --by-metric-output "${TMP_DIR}/missing_metric_by_metric.csv" \
   --overlap-output "${TMP_DIR}/missing_metric_overlap.csv" \
+  --lower-tail-by-sample-output "${TMP_DIR}/missing_metric_lower_tail_by_sample.csv" \
+  --lower-tail-summary-output "${TMP_DIR}/missing_metric_lower_tail_summary.csv" \
   --summary "${TMP_DIR}/missing_metric.summary.tsv" \
   --session-info "${TMP_DIR}/missing_metric.session.txt" \
   2> "${TMP_DIR}/missing_metric.err"; then
@@ -211,6 +258,8 @@ if "${PYTHON_BIN}" "${ROOT_DIR}/scripts/control/summarize_qc_threshold_impact.py
   --by-sample-output "${TMP_DIR}/bad_value_by_sample.csv" \
   --by-metric-output "${TMP_DIR}/bad_value_by_metric.csv" \
   --overlap-output "${TMP_DIR}/bad_value_overlap.csv" \
+  --lower-tail-by-sample-output "${TMP_DIR}/bad_value_lower_tail_by_sample.csv" \
+  --lower-tail-summary-output "${TMP_DIR}/bad_value_lower_tail_summary.csv" \
   --summary "${TMP_DIR}/bad_value.summary.tsv" \
   --session-info "${TMP_DIR}/bad_value.session.txt" \
   2> "${TMP_DIR}/bad_value.err"; then

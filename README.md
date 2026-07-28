@@ -274,7 +274,10 @@ INTEGRATION_POLICY_RESOLUTION
 `QC_THRESHOLD_IMPACT_SUMMARY` is non-destructive. It simulates the
 consequence of a proposed QC policy before approval, publishing per-sample,
 per-metric and overlap summaries so a reviewer can judge the biological impact
-before `QC_FILTER_POLICY` removes any cells.
+before `QC_FILTER_POLICY` removes any cells. It also publishes lower-tail
+diagnostics for low-complexity signals such as very low `nFeature_RNA`,
+`nCount_RNA` and `log10GenesPerUMI`, allowing reviewers to spot weak lower
+tails without converting those probes into automatic filters.
 
 The next scientific block is integration approval validation.
 
