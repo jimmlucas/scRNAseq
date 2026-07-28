@@ -101,7 +101,7 @@ process QC_THRESHOLD_IMPACT_SUMMARY {
     CSV
 
     cat > qc_threshold_impact_by_metric.csv <<'CSV'
-    sample,Group,metric,cells_before,flagged_cells,flagged_fraction
+    sample,Group,metric,cells_before,flagged_cells,flagged_fraction,unique_flagged_cells,unique_flagged_fraction,overlapped_flagged_cells
     CSV
 
     cat > qc_threshold_overlap_summary.csv <<'CSV'

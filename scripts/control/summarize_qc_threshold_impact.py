@@ -391,6 +391,7 @@ def main() -> int:
         metric: set()
         for metric in thresholds
     }
+    sample_metric_sets: dict[tuple[str, str], set[str]] = {}
     flagged_any_cells: set[str] = set()
 
     cell_columns = set(cell_rows[0])
@@ -459,6 +460,10 @@ def main() -> int:
             if flagged:
                 metric_record["flagged_cells"] += 1
                 metric_sets[metric].add(cell_id)
+                sample_metric_sets.setdefault(
+                    metric_key,
+                    set(),
+                ).add(cell_id)
 
         if any(metric_flags.values()):
             sample_record["flagged_any"] += 1
@@ -481,8 +486,70 @@ def main() -> int:
         row = by_metric[(sample, metric)]
         cells_before = int(row["cells_before"])
         flagged_cells = int(row["flagged_cells"])
+        metric_cell_set = sample_metric_sets.get(
+            (sample, metric),
+            set(),
+        )
+        other_metric_cells = set().union(
+            *[
+                sample_metric_sets.get((sample, other_metric), set())
+                for other_metric in thresholds
+                if other_metric != metric
+            ]
+        )
+        unique_flagged_cells = len(
+            metric_cell_set - other_metric_cells
+        )
+        overlapped_flagged_cells = (
+            flagged_cells - unique_flagged_cells
+        )
         row["flagged_fraction"] = ratio(flagged_cells, cells_before)
+        row["unique_flagged_cells"] = unique_flagged_cells
+        row["unique_flagged_fraction"] = ratio(
+            unique_flagged_cells,
+            flagged_cells,
+        )
+        row["overlapped_flagged_cells"] = overlapped_flagged_cells
         by_metric_rows.append(row)
+
+    global_metric_rows = []
+
+    for metric in sorted(thresholds):
+        metric_cell_set = metric_sets[metric]
+        other_metric_cells = set().union(
+            *[
+                metric_sets[other_metric]
+                for other_metric in thresholds
+                if other_metric != metric
+            ]
+        )
+        flagged_cells = len(metric_cell_set)
+        unique_flagged_cells = len(
+            metric_cell_set - other_metric_cells
+        )
+        global_metric_rows.append(
+            {
+                "sample": "ALL",
+                "Group": "ALL",
+                "metric": metric,
+                "cells_before": len(cell_rows),
+                "flagged_cells": flagged_cells,
+                "flagged_fraction": ratio(
+                    flagged_cells,
+                    len(cell_rows),
+                ),
+                "unique_flagged_cells": unique_flagged_cells,
+                "unique_flagged_fraction": ratio(
+                    unique_flagged_cells,
+                    flagged_cells,
+                ),
+                "overlapped_flagged_cells": (
+                    flagged_cells - unique_flagged_cells
+                ),
+            }
+        )
+
+    by_metric_rows = global_metric_rows + by_metric_rows
 
     overlap_rows = []
 
@@ -588,6 +655,9 @@ def main() -> int:
             "cells_before",
             "flagged_cells",
             "flagged_fraction",
+            "unique_flagged_cells",
+            "unique_flagged_fraction",
+            "overlapped_flagged_cells",
         ],
     )
     write_csv(

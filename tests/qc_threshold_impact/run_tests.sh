@@ -125,9 +125,21 @@ with (base / "qc_threshold_impact_by_metric.csv").open(
     }
 
 assert int(by_metric[("S1", "nFeature_RNA")]["flagged_cells"]) == 2
+assert int(by_metric[("S1", "nFeature_RNA")]["unique_flagged_cells"]) == 1
+assert int(by_metric[("S1", "nFeature_RNA")]["overlapped_flagged_cells"]) == 1
 assert int(by_metric[("S1", "nCount_RNA")]["flagged_cells"]) == 1
+assert int(by_metric[("S1", "nCount_RNA")]["unique_flagged_cells"]) == 0
+assert int(by_metric[("S1", "nCount_RNA")]["overlapped_flagged_cells"]) == 1
 assert int(by_metric[("S1", "percent.mito")]["flagged_cells"]) == 0
 assert int(by_metric[("S2", "percent.mito")]["flagged_cells"]) == 2
+assert int(by_metric[("S2", "percent.mito")]["unique_flagged_cells"]) == 1
+
+assert int(by_metric[("ALL", "nFeature_RNA")]["flagged_cells"]) == 3
+assert int(by_metric[("ALL", "nFeature_RNA")]["unique_flagged_cells"]) == 1
+assert int(by_metric[("ALL", "nCount_RNA")]["flagged_cells"]) == 2
+assert int(by_metric[("ALL", "nCount_RNA")]["unique_flagged_cells"]) == 0
+assert int(by_metric[("ALL", "percent.mito")]["flagged_cells"]) == 2
+assert int(by_metric[("ALL", "percent.mito")]["unique_flagged_cells"]) == 1
 
 with (base / "qc_threshold_overlap_summary.csv").open(
     encoding="utf-8",
