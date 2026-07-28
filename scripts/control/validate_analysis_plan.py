@@ -44,9 +44,13 @@ ALLOWED_MATRIX_TYPES = {
 
 ALLOWED_THRESHOLD_MODES = {
     "fixed",
+    "data_driven",
     "adaptive",
     "hybrid",
-    "manual",
+}
+
+DEPRECATED_THRESHOLD_MODE_ALIASES = {
+    "adaptive": "data_driven",
 }
 
 ROUTING_MODULES = {
@@ -248,6 +252,12 @@ def main() -> int:
         "qc.threshold_mode",
         errors,
     )
+
+    if threshold_mode in DEPRECATED_THRESHOLD_MODE_ALIASES:
+        warnings.append(
+            "qc.threshold_mode='adaptive' is deprecated; "
+            "use 'data_driven'."
+        )
 
     unknown_routes = set(routing) - ROUTING_MODULES
 

@@ -19,6 +19,10 @@ SUPPORTED_THRESHOLD_MODES = {
     "hybrid",
 }
 
+THRESHOLD_MODE_ALIASES = {
+    "adaptive": "data_driven",
+}
+
 
 METRIC_COLUMNS = {
     "nFeature_RNA": "nFeature_RNA",
@@ -324,12 +328,18 @@ def resolve_threshold_mode(
             "hybrid",
         )
     ).strip().lower()
+    mode = THRESHOLD_MODE_ALIASES.get(mode, mode)
 
     if mode not in SUPPORTED_THRESHOLD_MODES:
         raise ValueError(
             "Unsupported qc.threshold_mode: "
             f"{mode}. Supported values: "
-            + ", ".join(sorted(SUPPORTED_THRESHOLD_MODES))
+            + ", ".join(
+                sorted(
+                    SUPPORTED_THRESHOLD_MODES
+                    | set(THRESHOLD_MODE_ALIASES)
+                )
+            )
         )
 
     return mode

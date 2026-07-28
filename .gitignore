@@ -49,4 +49,9 @@ results_test_ghcr/
 
 results_test_repro/
 
+results_real_validation/
+configs/real_validation/
+real_inputs/
+tmp/
+
 !tests/doublet_scoring/fixtures/seu_qc_filtered.rds

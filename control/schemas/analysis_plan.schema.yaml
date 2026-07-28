@@ -38,9 +38,9 @@ allowed_values:
 
   threshold_mode:
     - fixed
+    - data_driven
     - adaptive
     - hybrid
-    - manual
 
   approval_policy:
     - automatic
