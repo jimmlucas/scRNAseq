@@ -155,19 +155,31 @@ workflow {
         params.mode == 'qc_filter_policy_phase'
     ) {
 
-        if (!params.input_object) {
+        if (
+            !params.input_object
+            || params.input_object instanceof Boolean
+        ) {
             error """
             The qc_filter_policy_phase mode requires:
 
             --input_object <path_to_qc_metrics_object.rds>
+
+            If using a shell variable, check that it is defined before
+            running Nextflow.
             """.stripIndent()
         }
 
-        if (!params.approved_qc_threshold_policy) {
+        if (
+            !params.approved_qc_threshold_policy
+            || params.approved_qc_threshold_policy instanceof Boolean
+        ) {
             error """
             The qc_filter_policy_phase mode requires:
 
             --approved_qc_threshold_policy <path_to_validated_policy.yaml>
+
+            If using a shell variable, check that it is defined before
+            running Nextflow.
             """.stripIndent()
         }
 

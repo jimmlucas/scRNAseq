@@ -221,6 +221,66 @@ The difference is orchestration, not scientific behavior. The pipeline does
 not know whether the next command was launched by a person, a script or an
 external supervisor.
 
+## Standalone QC Review
+
+After `analysis_plan_qc_process`, the pipeline publishes a proposed QC
+threshold policy plus impact diagnostics. The reviewer should not need to copy
+YAML files manually. The standalone helper prepares the human-reviewed policy
+artifact:
+
+```bash
+python3 scripts/control/review_qc_policy.py \
+  --results-dir results_real_validation/K14897 \
+  --decision approve \
+  --reviewer jimmlucas
+```
+
+For a modified approval:
+
+```bash
+python3 scripts/control/review_qc_policy.py \
+  --results-dir results_real_validation/K14897 \
+  --decision modify-and-approve \
+  --reviewer jimmlucas \
+  --set percent.mito.max=15 \
+  --set nFeature_RNA.min=200
+```
+
+The helper reads:
+
+```text
+control/qc_thresholds/qc_threshold_policy.yaml
+control/qc_threshold_impact/qc_threshold_impact.summary.tsv
+control/qc_threshold_impact/qc_threshold_impact_by_sample.csv
+control/qc_threshold_impact/qc_threshold_impact_by_metric.csv
+control/qc_threshold_impact/qc_lower_tail_summary.csv
+```
+
+and writes:
+
+```text
+qc_threshold_policy.reviewed.yaml
+qc_threshold_policy.review.summary.tsv
+qc_threshold_policy.review.session.txt
+```
+
+This is still non-destructive. It records a human decision, reviewer,
+timestamp, reason, impact snapshot and optional threshold changes. It does not
+validate the policy and does not filter cells. Nextflow still validates the
+reviewed policy before application:
+
+```bash
+nextflow run main.nf \
+  --mode qc_threshold_approval_phase \
+  --analysis_plan configs/real_validation/K14897/analysis_plan.yaml \
+  --approved_qc_threshold_policy configs/real_validation/K14897/review/qc_threshold_policy.reviewed.yaml \
+  --project_id K14897 \
+  --biological_run_id K14897 \
+  --outdir results_real_validation/K14897 \
+  -profile docker \
+  -resume
+```
+
 ## Current Flow
 
 The current plan-driven path reaches PCA-ready dimensionality artifacts:
