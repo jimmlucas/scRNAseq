@@ -281,6 +281,42 @@ nextflow run main.nf \
   -resume
 ```
 
+## Phase Input Resolution
+
+Published artifact paths are derived from `--outdir`. Users and external
+supervisors should not have to remember every internal folder name. The phase
+input resolver prints the canonical paths required by a downstream phase:
+
+```bash
+python3 scripts/control/resolve_phase_inputs.py \
+  --outdir results_real_validation/K14897 \
+  --phase qc_filter_policy_phase \
+  --format shell \
+  --require-existing
+```
+
+Example output:
+
+```bash
+INPUT_OBJECT=results_real_validation/K14897/01a_qc_metrics/seu_qc_metrics.rds
+APPROVED_QC_THRESHOLD_POLICY=results_real_validation/K14897/control/qc_threshold_approval/approved_qc_threshold_policy.yaml
+```
+
+For doublet scoring:
+
+```bash
+python3 scripts/control/resolve_phase_inputs.py \
+  --outdir results_real_validation/K14897 \
+  --phase doublet_detection_scoring_phase \
+  --project-id K14897 \
+  --format shell \
+  --require-existing
+```
+
+This helper does not run Nextflow and does not create scientific decisions. It
+only resolves expected paths, reports whether they exist and fails early when a
+phase is missing required upstream artifacts.
+
 ## Current Flow
 
 The current plan-driven path reaches PCA-ready dimensionality artifacts:
