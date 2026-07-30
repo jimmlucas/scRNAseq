@@ -31,6 +31,15 @@ ARTIFACTS = {
     "qc_filter_summary": (
         "01e_qc_filter_policy/01e_qc_filter_summary.csv"
     ),
+    "sample_objects": (
+        "01f_split_seurat_by_sample/sample_objects"
+    ),
+    "sample_manifest": (
+        "01f_split_seurat_by_sample/01f_split_by_sample_manifest.tsv"
+    ),
+    "split_by_sample_summary": (
+        "01f_split_seurat_by_sample/01f_split_by_sample_summary.csv"
+    ),
     "doublet_scored_object": (
         "01g_doublet_detection_scoring/seu_doublet_scored.rds"
     ),
@@ -98,6 +107,9 @@ PHASE_INPUTS = {
     "qc_filter_policy_phase": {
         "input_object": "qc_metrics_object",
         "approved_qc_threshold_policy": "approved_qc_threshold_policy",
+    },
+    "split_seurat_by_sample_phase": {
+        "input_object": "qc_filtered_object",
     },
     "doublet_detection_scoring_phase": {
         "input_object": "qc_filtered_object",

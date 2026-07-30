@@ -22,12 +22,15 @@ mkdir -p \
   "${OUTDIR}/01a_qc_metrics" \
   "${OUTDIR}/control/qc_threshold_approval" \
   "${OUTDIR}/01e_qc_filter_policy" \
+  "${OUTDIR}/01f_split_seurat_by_sample/sample_objects" \
   "${CONFIG_DIR}"
 
 touch \
   "${OUTDIR}/01a_qc_metrics/seu_qc_metrics.rds" \
   "${OUTDIR}/control/qc_threshold_approval/approved_qc_threshold_policy.yaml" \
   "${OUTDIR}/01e_qc_filter_policy/seu_qc_filtered.rds" \
+  "${OUTDIR}/01f_split_seurat_by_sample/01f_split_by_sample_manifest.tsv" \
+  "${OUTDIR}/01f_split_seurat_by_sample/01f_split_by_sample_summary.csv" \
   "${CONFIG_DIR}/doublet_config.yaml"
 
 pushd "${TMP_DIR}/repo" >/dev/null
@@ -42,6 +45,15 @@ pushd "${TMP_DIR}/repo" >/dev/null
 grep -q "INPUT_OBJECT=.*seu_qc_metrics.rds" "${TMP_DIR}/qc_filter.env"
 grep -q "APPROVED_QC_THRESHOLD_POLICY=.*approved_qc_threshold_policy.yaml" \
   "${TMP_DIR}/qc_filter.env"
+
+"${PYTHON_BIN}" "${ROOT_DIR}/scripts/control/resolve_phase_inputs.py" \
+  --outdir "${OUTDIR}" \
+  --phase split_seurat_by_sample_phase \
+  --format shell \
+  --require-existing \
+  > "${TMP_DIR}/split.env"
+
+grep -q "INPUT_OBJECT=.*seu_qc_filtered.rds" "${TMP_DIR}/split.env"
 
 "${PYTHON_BIN}" "${ROOT_DIR}/scripts/control/resolve_phase_inputs.py" \
   --outdir "${OUTDIR}" \

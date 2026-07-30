@@ -616,6 +616,43 @@ modules:
       - INTEGRATION
       - CLUSTERING
 
+  SPLIT_SEURAT_BY_SAMPLE:
+    stage: qc
+    process_name: SPLIT_SEURAT_BY_SAMPLE
+    mode: split_seurat_by_sample_phase
+    script: scripts/01f_split_seurat_by_sample.R
+
+    config_sections:
+      - qc_threshold_policy
+
+    input_artifacts:
+      - artifact_type: qc_filtered_seurat
+        path: 01e_qc_filter_policy/seu_qc_filtered.rds
+
+    output_artifacts:
+      - artifact_type: sample_seurat_objects
+        path: 01f_split_seurat_by_sample/sample_objects
+
+      - artifact_type: sample_manifest
+        path: 01f_split_seurat_by_sample/01f_split_by_sample_manifest.tsv
+
+      - artifact_type: split_summary
+        path: 01f_split_seurat_by_sample/01f_split_by_sample_summary.csv
+
+      - artifact_type: session_info
+        path: 01f_split_seurat_by_sample/01f_sessionInfo.txt
+
+    checkpoint_after: PCC_SPLIT_BY_SAMPLE
+    resource_class: high_memory
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - QC_DOUBLET_DETECTION
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
   QC_FILTER:
     stage: qc
     process_name: QC_FILTER

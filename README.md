@@ -342,6 +342,8 @@ VALIDATE_QC_THRESHOLD_APPROVAL
         ↓
 QC_FILTER_POLICY
         ↓
+SPLIT_SEURAT_BY_SAMPLE
+        ↓
 DOUBLET_DETECTION_SCORING
         ↓
 DOUBLET_POLICY_RESOLUTION
@@ -374,6 +376,15 @@ before `QC_FILTER_POLICY` removes any cells. It also publishes lower-tail
 diagnostics for low-complexity signals such as very low `nFeature_RNA`,
 `nCount_RNA` and `log10GenesPerUMI`, allowing reviewers to spot weak lower
 tails without converting those probes into automatic filters.
+
+`SPLIT_SEURAT_BY_SAMPLE` is a non-destructive checkpoint between QC filtering
+and doublet scoring. Think of it as placing each biological sample on its own
+bench before a technician starts sample-specific work. The original
+QC-filtered object remains unchanged, while the phase publishes one Seurat RDS
+per sample plus `01f_split_by_sample_manifest.tsv`. That manifest is the
+contract future per-sample modules can consume, allowing doublet detection to
+be parallelized and resumed per sample without making BBUDY or the user depend
+on hand-written paths.
 
 `DOUBLET_DETECTION_SCORING` is also non-destructive. It annotates cells with
 DoubletFinder scores and proposed classes but does not remove cells. It
@@ -461,6 +472,7 @@ analysis_plan_qc_process
 qc_threshold_approval_phase
 qc_filter_policy_phase
 qc_visualization_policy_phase
+split_seurat_by_sample_phase
 doublet_detection_scoring_phase
 doublet_policy_resolution_phase
 doublet_approval_phase

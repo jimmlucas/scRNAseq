@@ -8,6 +8,7 @@ include { ANALYSIS_PLAN_QC_PROCESS } from './subworkflow/control/analysis_plan_q
 include { QC_THRESHOLD_APPROVAL_PHASE } from './subworkflow/control/qc_threshold_approval_phase'
 include { QC_FILTER_POLICY_PHASE } from './subworkflow/control/qc_filter_policy_phase'
 include { QC_VISUALIZATION_POLICY_PHASE } from './subworkflow/control/qc_visualization_policy_phase'
+include { SPLIT_SEURAT_BY_SAMPLE_PHASE } from './subworkflow/control/split_seurat_by_sample_phase'
 include { DOUBLET_DETECTION_SCORING_PHASE } from './subworkflow/control/doublet_detection_scoring_phase'
 include { DOUBLET_POLICY_RESOLUTION_PHASE } from './subworkflow/control/doublet_policy_resolution_phase'
 include { DOUBLET_APPROVAL_PHASE } from './subworkflow/control/doublet_approval_phase'
@@ -280,6 +281,44 @@ workflow {
             filtered_object_ch,
             cell_decisions_ch,
             approved_policy_ch
+        )
+
+
+    /*
+     * MODE: split_seurat_by_sample_phase
+     *
+     * Split a QC-filtered Seurat object into per-sample artifacts.
+     * This is a non-destructive checkpoint used by per-sample downstream
+     * phases such as doublet detection.
+     */
+    } else if (
+        params.mode == 'split_seurat_by_sample_phase'
+    ) {
+
+        if (
+            !params.input_object
+            || params.input_object instanceof Boolean
+        ) {
+            error """
+            The split_seurat_by_sample_phase mode requires:
+
+            --input_object <path_to_qc_filtered_object.rds>
+
+            If using a shell variable, check that it is defined before
+            running Nextflow.
+            """.stripIndent()
+        }
+
+        filtered_object_ch = channel.value(
+            file(
+                params.input_object,
+                checkIfExists: true
+            )
+        )
+
+        SPLIT_SEURAT_BY_SAMPLE_PHASE(
+            scientific_meta_ch,
+            filtered_object_ch
         )
 
 
@@ -1397,6 +1436,7 @@ workflow {
             - qc_threshold_approval_phase
             - qc_filter_policy_phase
             - qc_visualization_policy_phase
+            - split_seurat_by_sample_phase
             - doublet_detection_scoring_phase
             - doublet_policy_resolution_phase
             - doublet_approval_phase

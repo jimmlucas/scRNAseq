@@ -173,6 +173,7 @@ execution_modes:
       - qc_threshold_approval_phase
       - qc_filter_policy_phase
       - qc_visualization_policy_phase
+      - split_seurat_by_sample_phase
       - doublet_detection_scoring_phase
       - doublet_policy_resolution_phase
       - doublet_approval_phase
