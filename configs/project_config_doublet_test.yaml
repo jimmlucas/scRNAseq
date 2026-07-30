@@ -11,3 +11,4 @@ doublet:
   pcs: 10
   min_cells: 50
   nfeatures: 1000
+  sweep_cores: 1

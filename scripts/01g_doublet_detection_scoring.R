@@ -38,6 +38,29 @@ message_step <- function(label) {
   message("\n========== ", label, " ==========")
 }
 
+time_step <- function(expr) {
+  start <- proc.time()[["elapsed"]]
+  value <- force(expr)
+  elapsed <- proc.time()[["elapsed"]] - start
+
+  list(
+    value = value,
+    seconds = as.numeric(elapsed)
+  )
+}
+
+message_timed <- function(sample_id, label, seconds) {
+  message(
+    "[",
+    sample_id,
+    "] ",
+    label,
+    " finished in ",
+    round(seconds, 2),
+    " s"
+  )
+}
+
 check_file <- function(path, label) {
   if (is.null(path) || !nzchar(path)) {
     stop("Missing path for ", label)
@@ -200,33 +223,55 @@ get_sample_counts_matrix <- function(
 }
 
 safe_scale_and_pca <- function(obj, npcs, nfeatures) {
-  obj <- NormalizeData(
-    object = obj,
-    normalization.method = "LogNormalize",
-    scale.factor = 10000,
-    verbose = FALSE
+  t_norm <- time_step(
+    NormalizeData(
+      object = obj,
+      normalization.method = "LogNormalize",
+      scale.factor = 10000,
+      verbose = FALSE
+    )
   )
+  obj <- t_norm$value
 
-  obj <- FindVariableFeatures(
-    object = obj,
-    selection.method = "vst",
-    nfeatures = nfeatures,
-    verbose = FALSE
+  t_hvg <- time_step(
+    FindVariableFeatures(
+      object = obj,
+      selection.method = "vst",
+      nfeatures = nfeatures,
+      verbose = FALSE
+    )
   )
+  obj <- t_hvg$value
 
   variable_features <- VariableFeatures(obj)
 
-  obj <- ScaleData(
-    object = obj,
-    features = variable_features,
-    verbose = FALSE
+  t_scale <- time_step(
+    ScaleData(
+      object = obj,
+      features = variable_features,
+      verbose = FALSE
+    )
+  )
+  obj <- t_scale$value
+
+  t_pca <- time_step(
+    RunPCA(
+      object = obj,
+      features = variable_features,
+      npcs = npcs,
+      verbose = FALSE
+    )
   )
 
-  RunPCA(
-    object = obj,
-    features = variable_features,
-    npcs = npcs,
-    verbose = FALSE
+  list(
+    object = t_pca$value,
+    variable_features = variable_features,
+    timings = list(
+      normalize_seconds = t_norm$seconds,
+      find_variable_features_seconds = t_hvg$seconds,
+      scale_data_seconds = t_scale$seconds,
+      run_pca_seconds = t_pca$seconds
+    )
   )
 }
 
@@ -372,7 +417,10 @@ skipped_sample_result <- function(
     cell_ids,
     expected_doublet_rate,
     pN,
-    status
+    status,
+    pcs = NA_integer_,
+    nfeatures = NA_integer_,
+    sweep_cores = NA_integer_
 ) {
   metadata <- data.frame(
     cell_id = cell_ids,
@@ -409,7 +457,22 @@ skipped_sample_result <- function(
   list(
     metadata = metadata,
     summary = summary,
-    bcmvn = NULL
+    bcmvn = NULL,
+    performance = data.frame(
+      sample = sample_id,
+      cells = length(cell_ids),
+      nfeatures = nfeatures,
+      pcs = pcs,
+      sweep_cores = sweep_cores,
+      normalize_seconds = NA_real_,
+      find_variable_features_seconds = NA_real_,
+      scale_data_seconds = NA_real_,
+      run_pca_seconds = NA_real_,
+      param_sweep_seconds = NA_real_,
+      doublet_finder_seconds = NA_real_,
+      total_seconds = 0,
+      stringsAsFactors = FALSE
+    )
   )
 }
 
@@ -422,6 +485,7 @@ run_doubletfinder_one_sample <- function(
     pN,
     min_cells,
     nfeatures,
+    sweep_cores,
     reuse_pANN = NULL
 ) {
   message_step(paste0("Scoring sample: ", sample_id))
@@ -441,7 +505,10 @@ run_doubletfinder_one_sample <- function(
         cell_ids = sample_cells,
         expected_doublet_rate = expected_doublet_rate,
         pN = pN,
-        status = "skipped_low_cell_number"
+        status = "skipped_low_cell_number",
+        pcs = pcs,
+        nfeatures = nfeatures,
+        sweep_cores = sweep_cores
       )
     )
   }
@@ -479,27 +546,76 @@ run_doubletfinder_one_sample <- function(
         cell_ids = cell_ids,
         expected_doublet_rate = expected_doublet_rate,
         pN = pN,
-        status = "skipped_too_few_pcs"
+        status = "skipped_too_few_pcs",
+        pcs = max_pcs,
+        nfeatures = nfeatures,
+        sweep_cores = sweep_cores
       )
     )
   }
 
-  obj <- safe_scale_and_pca(
+  message("[", sample_id, "] NormalizeData started")
+  message("[", sample_id, "] FindVariableFeatures target: ", nfeatures)
+  message("[", sample_id, "] ScaleData will use variable features only")
+  message("[", sample_id, "] RunPCA target PCs: ", max_pcs)
+
+  prep <- safe_scale_and_pca(
     obj = obj,
     npcs = max_pcs,
     nfeatures = nfeatures
   )
+  obj <- prep$object
+  variable_features <- prep$variable_features
+  prep_timings <- prep$timings
+
+  message_timed(
+    sample_id,
+    "NormalizeData",
+    prep_timings$normalize_seconds
+  )
+  message_timed(
+    sample_id,
+    "FindVariableFeatures",
+    prep_timings$find_variable_features_seconds
+  )
+  message_timed(
+    sample_id,
+    "ScaleData",
+    prep_timings$scale_data_seconds
+  )
+  message_timed(
+    sample_id,
+    "RunPCA",
+    prep_timings$run_pca_seconds
+  )
 
   pcs_use <- seq_len(max_pcs)
 
-  sweep_res <- call_with_supported_args(
-    fun = paramSweep_fun,
-    args = list(
-      seu = obj,
-      PCs = pcs_use,
-      sct = FALSE,
-      pN = pN
+  message(
+    "[",
+    sample_id,
+    "] paramSweep started with num.cores = ",
+    sweep_cores
+  )
+
+  t_sweep <- time_step(
+    call_with_supported_args(
+      fun = paramSweep_fun,
+      args = list(
+        seu = obj,
+        PCs = pcs_use,
+        sct = FALSE,
+        pN = pN,
+        num.cores = sweep_cores
+      )
     )
+  )
+  sweep_res <- t_sweep$value
+
+  message_timed(
+    sample_id,
+    "paramSweep",
+    t_sweep$seconds
   )
 
   sweep_stats <- summarizeSweep_fun(
@@ -551,17 +667,28 @@ run_doubletfinder_one_sample <- function(
 
   meta_before <- obj@meta.data
 
-  obj <- call_with_supported_args(
-    fun = doubletFinder_fun,
-    args = list(
-      seu = obj,
-      PCs = pcs_use,
-      pN = pN,
-      pK = best_pk,
-      nExp = nExp_adjusted,
-      reuse.pANN = reuse_pANN,
-      sct = FALSE
+  message("[", sample_id, "] doubletFinder started")
+
+  t_df <- time_step(
+    call_with_supported_args(
+      fun = doubletFinder_fun,
+      args = list(
+        seu = obj,
+        PCs = pcs_use,
+        pN = pN,
+        pK = best_pk,
+        nExp = nExp_adjusted,
+        reuse.pANN = reuse_pANN,
+        sct = FALSE
+      )
     )
+  )
+  obj <- t_df$value
+
+  message_timed(
+    sample_id,
+    "doubletFinder",
+    t_df$seconds
   )
 
   df_cols <- get_doubletfinder_columns(
@@ -617,13 +744,41 @@ run_doubletfinder_one_sample <- function(
     stringsAsFactors = FALSE
   )
 
+  total_seconds <- sum(
+    prep_timings$normalize_seconds,
+    prep_timings$find_variable_features_seconds,
+    prep_timings$scale_data_seconds,
+    prep_timings$run_pca_seconds,
+    t_sweep$seconds,
+    t_df$seconds,
+    na.rm = TRUE
+  )
+
+  sample_performance <- data.frame(
+    sample = sample_id,
+    cells = ncol(obj),
+    nfeatures = length(variable_features),
+    pcs = length(pcs_use),
+    sweep_cores = sweep_cores,
+    normalize_seconds = prep_timings$normalize_seconds,
+    find_variable_features_seconds =
+      prep_timings$find_variable_features_seconds,
+    scale_data_seconds = prep_timings$scale_data_seconds,
+    run_pca_seconds = prep_timings$run_pca_seconds,
+    param_sweep_seconds = t_sweep$seconds,
+    doublet_finder_seconds = t_df$seconds,
+    total_seconds = total_seconds,
+    stringsAsFactors = FALSE
+  )
+
   rm(obj)
   gc()
 
   list(
     metadata = sample_metadata,
     summary = sample_summary,
-    bcmvn = bcmvn
+    bcmvn = bcmvn,
+    performance = sample_performance
   )
 }
 
@@ -646,6 +801,17 @@ pN <- get_config_value(config, "doublet.pN", 0.25)
 pcs <- get_config_value(config, "doublet.pcs", 15)
 min_cells <- get_config_value(config, "doublet.min_cells", 500)
 nfeatures <- get_config_value(config, "doublet.nfeatures", 1500)
+sweep_cores <- as.integer(
+  get_config_value(config, "doublet.sweep_cores", 1)
+)
+
+if (
+  is.na(sweep_cores) ||
+    length(sweep_cores) != 1 ||
+    sweep_cores < 1
+) {
+  stop("doublet.sweep_cores must be a positive integer.")
+}
 
 message_step("Loading QC-filtered Seurat object")
 seu <- readRDS(opt$input)
@@ -700,6 +866,7 @@ results <- lapply(
   pN = pN,
   min_cells = min_cells,
   nfeatures = nfeatures,
+  sweep_cores = sweep_cores,
   reuse_pANN = NULL
 )
 
@@ -713,6 +880,10 @@ doublet_summary_by_sample <- dplyr::bind_rows(
 
 bcmvn_list <- lapply(results, `[[`, "bcmvn")
 bcmvn_list <- bcmvn_list[!sapply(bcmvn_list, is.null)]
+
+performance_table <- dplyr::bind_rows(
+  lapply(results, `[[`, "performance")
+)
 
 if (length(bcmvn_list) > 0) {
   bcmvn_table <- dplyr::bind_rows(bcmvn_list)
@@ -771,6 +942,7 @@ overall_summary <- data.frame(
     "pcs",
     "min_cells",
     "nfeatures",
+    "sweep_cores",
     "approval_status"
   ),
   value = c(
@@ -787,6 +959,7 @@ overall_summary <- data.frame(
     pcs,
     min_cells,
     nfeatures,
+    sweep_cores,
     "proposed"
   )
 )
@@ -813,6 +986,11 @@ readr::write_csv(
 readr::write_csv(
   bcmvn_table,
   "01g_doublet_detection_pk_sweep.csv"
+)
+
+readr::write_csv(
+  performance_table,
+  "01g_doublet_detection_performance.csv"
 )
 
 sink("01g_sessionInfo.txt")

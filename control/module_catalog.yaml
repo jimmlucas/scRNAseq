@@ -840,6 +840,9 @@ modules:
       - artifact_type: metrics
         path: 01g_doublet_detection_scoring/01g_doublet_detection_pk_sweep.csv
 
+      - artifact_type: performance_metrics
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_performance.csv
+
       - artifact_type: session_info
         path: 01g_doublet_detection_scoring/01g_sessionInfo.txt
 

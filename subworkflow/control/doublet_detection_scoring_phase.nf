@@ -67,6 +67,9 @@ workflow DOUBLET_DETECTION_SCORING_PHASE {
     pk_sweep =
         DOUBLET_DETECTION_SCORING.out.pk_sweep
 
+    performance =
+        DOUBLET_DETECTION_SCORING.out.performance
+
     session_info =
         DOUBLET_DETECTION_SCORING.out.session_info
 }

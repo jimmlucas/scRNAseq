@@ -34,12 +34,18 @@ cell_scores_csv <- file.path(
   "01g_doublet_detection_cell_scores.csv"
 )
 
+performance_csv <- file.path(
+  output_dir,
+  "01g_doublet_detection_performance.csv"
+)
+
 required_files <- c(
   input_path,
   output_rds,
   summary_csv,
   by_sample_csv,
   cell_scores_csv,
+  performance_csv,
   file.path(
     output_dir,
     "01g_doublet_detection_pk_sweep.csv"
@@ -194,9 +200,54 @@ stopifnot(
   )
 )
 
+performance <- read.csv(
+  performance_csv,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+
+required_performance_columns <- c(
+  "sample",
+  "cells",
+  "nfeatures",
+  "pcs",
+  "sweep_cores",
+  "normalize_seconds",
+  "find_variable_features_seconds",
+  "scale_data_seconds",
+  "run_pca_seconds",
+  "param_sweep_seconds",
+  "doublet_finder_seconds",
+  "total_seconds"
+)
+
+missing_performance_columns <- setdiff(
+  required_performance_columns,
+  colnames(performance)
+)
+
+if (length(missing_performance_columns) > 0) {
+  stop(
+    "Missing required performance columns: ",
+    paste(missing_performance_columns, collapse = ", ")
+  )
+}
+
+stopifnot(
+  nrow(performance) == 2L,
+  setequal(performance$sample, c("wta-1", "wta-5")),
+  sum(performance$cells) == 392L,
+  all(performance$nfeatures <= 1000L),
+  all(performance$pcs == 10L),
+  all(performance$sweep_cores >= 1L),
+  all(performance$total_seconds >= 0),
+  all(performance$param_sweep_seconds >= 0)
+)
+
 cat("\nDoublet scoring regression test: VALID\n")
 cat("Cells preserved: 392\n")
 cat("Features preserved: 27522\n")
 cat("Doublets proposed: 29\n")
 cat("Singlets proposed: 363\n")
 cat("Cells removed: 0\n")
+cat("Performance metrics: recorded\n")

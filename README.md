@@ -375,6 +375,16 @@ diagnostics for low-complexity signals such as very low `nFeature_RNA`,
 `nCount_RNA` and `log10GenesPerUMI`, allowing reviewers to spot weak lower
 tails without converting those probes into automatic filters.
 
+`DOUBLET_DETECTION_SCORING` is also non-destructive. It annotates cells with
+DoubletFinder scores and proposed classes but does not remove cells. It
+publishes `01g_doublet_detection_performance.csv`, a per-sample runtime profile
+covering normalization, HVG selection, scaling, PCA, pK sweep and final
+DoubletFinder scoring. This artifact is operational evidence for comparing
+local Docker, VM and HPC performance; it is not a scientific decision gate.
+The DoubletFinder pK sweep can use `doublet.sweep_cores`, defaulting to `1`,
+so deployments can choose between per-sample parallelism and internal sweep
+parallelism without changing the scientific policy.
+
 The next scientific block is integration approval validation.
 
 ## Policy Pattern

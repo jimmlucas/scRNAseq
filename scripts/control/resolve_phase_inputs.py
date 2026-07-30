@@ -43,6 +43,9 @@ ARTIFACTS = {
     "doublet_detection_cell_scores": (
         "01g_doublet_detection_scoring/01g_doublet_detection_cell_scores.csv"
     ),
+    "doublet_detection_performance": (
+        "01g_doublet_detection_scoring/01g_doublet_detection_performance.csv"
+    ),
     "doublet_policy": "control/doublet_policy/doublet_policy.yaml",
     "approved_doublet_policy": (
         "control/doublet_policy_approval/approved_doublet_policy.yaml"

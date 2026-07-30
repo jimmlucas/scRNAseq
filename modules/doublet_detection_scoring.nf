@@ -40,6 +40,9 @@ process DOUBLET_DETECTION_SCORING {
     path "01g_doublet_detection_pk_sweep.csv",
         emit: pk_sweep
 
+    path "01g_doublet_detection_performance.csv",
+        emit: performance
+
     path "01g_sessionInfo.txt",
         emit: session_info
 
@@ -114,6 +117,10 @@ process DOUBLET_DETECTION_SCORING {
 
     cat > 01g_doublet_detection_pk_sweep.csv <<'CSV'
     sample,pK,BCmetric
+    CSV
+
+    cat > 01g_doublet_detection_performance.csv <<'CSV'
+    sample,cells,nfeatures,pcs,sweep_cores,normalize_seconds,find_variable_features_seconds,scale_data_seconds,run_pca_seconds,param_sweep_seconds,doublet_finder_seconds,total_seconds
     CSV
 
     cat > 01g_sessionInfo.txt <<'TXT'
