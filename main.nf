@@ -10,6 +10,7 @@ include { QC_FILTER_POLICY_PHASE } from './subworkflow/control/qc_filter_policy_
 include { QC_VISUALIZATION_POLICY_PHASE } from './subworkflow/control/qc_visualization_policy_phase'
 include { SPLIT_SEURAT_BY_SAMPLE_PHASE } from './subworkflow/control/split_seurat_by_sample_phase'
 include { DOUBLET_DETECTION_SCORING_PHASE } from './subworkflow/control/doublet_detection_scoring_phase'
+include { DOUBLET_DETECTION_SCORING_BY_SAMPLE_PHASE } from './subworkflow/control/doublet_detection_scoring_by_sample_phase'
 include { DOUBLET_POLICY_RESOLUTION_PHASE } from './subworkflow/control/doublet_policy_resolution_phase'
 include { DOUBLET_APPROVAL_PHASE } from './subworkflow/control/doublet_approval_phase'
 include { DOUBLET_FILTER_PHASE } from './subworkflow/control/doublet_filter_phase'
@@ -365,6 +366,71 @@ workflow {
         DOUBLET_DETECTION_SCORING_PHASE(
             scientific_meta_ch,
             filtered_object_ch,
+            doublet_config_ch
+        )
+
+
+    /*
+     * MODE: doublet_detection_scoring_by_sample_phase
+     *
+     * Score doublets from per-sample Seurat objects produced by
+     * split_seurat_by_sample_phase. This keeps the final 01g contract
+     * compatible with downstream policy resolution while making scoring
+     * cacheable per sample.
+     */
+    } else if (
+        params.mode == 'doublet_detection_scoring_by_sample_phase'
+    ) {
+
+        if (!params.sample_manifest) {
+            error """
+            The doublet_detection_scoring_by_sample_phase mode requires:
+
+            --sample_manifest <path_to_01f_split_by_sample_manifest.tsv>
+            """.stripIndent()
+        }
+
+        if (!params.sample_objects) {
+            error """
+            The doublet_detection_scoring_by_sample_phase mode requires:
+
+            --sample_objects <path_to_sample_objects_directory>
+            """.stripIndent()
+        }
+
+        if (!params.doublet_config) {
+            error """
+            The doublet_detection_scoring_by_sample_phase mode requires:
+
+            --doublet_config <path_to_doublet_config.yaml>
+            """.stripIndent()
+        }
+
+        sample_manifest_ch = channel.value(
+            file(
+                params.sample_manifest,
+                checkIfExists: true
+            )
+        )
+
+        sample_objects_ch = channel.value(
+            file(
+                params.sample_objects,
+                checkIfExists: true
+            )
+        )
+
+        doublet_config_ch = channel.value(
+            file(
+                params.doublet_config,
+                checkIfExists: true
+            )
+        )
+
+        DOUBLET_DETECTION_SCORING_BY_SAMPLE_PHASE(
+            scientific_meta_ch,
+            sample_manifest_ch,
+            sample_objects_ch,
             doublet_config_ch
         )
 
@@ -1438,6 +1504,7 @@ workflow {
             - qc_visualization_policy_phase
             - split_seurat_by_sample_phase
             - doublet_detection_scoring_phase
+            - doublet_detection_scoring_by_sample_phase
             - doublet_policy_resolution_phase
             - doublet_approval_phase
             - doublet_filter_phase

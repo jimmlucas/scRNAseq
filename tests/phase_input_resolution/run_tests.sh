@@ -57,6 +57,21 @@ grep -q "INPUT_OBJECT=.*seu_qc_filtered.rds" "${TMP_DIR}/split.env"
 
 "${PYTHON_BIN}" "${ROOT_DIR}/scripts/control/resolve_phase_inputs.py" \
   --outdir "${OUTDIR}" \
+  --phase doublet_detection_scoring_by_sample_phase \
+  --project-id PHASE_TEST \
+  --format shell \
+  --require-existing \
+  > "${TMP_DIR}/doublet_by_sample.env"
+
+grep -q "SAMPLE_MANIFEST=.*01f_split_by_sample_manifest.tsv" \
+  "${TMP_DIR}/doublet_by_sample.env"
+grep -q "SAMPLE_OBJECTS=.*01f_split_seurat_by_sample/sample_objects" \
+  "${TMP_DIR}/doublet_by_sample.env"
+grep -q "DOUBLET_CONFIG=.*doublet_config.yaml" \
+  "${TMP_DIR}/doublet_by_sample.env"
+
+"${PYTHON_BIN}" "${ROOT_DIR}/scripts/control/resolve_phase_inputs.py" \
+  --outdir "${OUTDIR}" \
   --phase doublet_detection_scoring_phase \
   --project-id PHASE_TEST \
   --format json \

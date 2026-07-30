@@ -387,14 +387,22 @@ be parallelized and resumed per sample without making BBUDY or the user depend
 on hand-written paths.
 
 `DOUBLET_DETECTION_SCORING` is also non-destructive. It annotates cells with
-DoubletFinder scores and proposed classes but does not remove cells. It
-publishes `01g_doublet_detection_performance.csv`, a per-sample runtime profile
-covering normalization, HVG selection, scaling, PCA, pK sweep and final
-DoubletFinder scoring. This artifact is operational evidence for comparing
-local Docker, VM and HPC performance; it is not a scientific decision gate.
-The DoubletFinder pK sweep can use `doublet.sweep_cores`, defaulting to `1`,
-so deployments can choose between per-sample parallelism and internal sweep
-parallelism without changing the scientific policy.
+DoubletFinder scores and proposed classes but does not remove cells. The
+legacy mode still accepts a single QC-filtered object. The by-sample mode
+accepts `sample_manifest`, `sample_objects` and `doublet_config`, launches one
+scoring task per sample, then merges the results back into the canonical
+`01g_doublet_detection_scoring` outputs. Downstream phases therefore still
+consume the same `seu_doublet_scored.rds`, summary, by-sample, cell-score,
+pK-sweep and performance artifacts.
+
+Both doublet scoring modes publish `01g_doublet_detection_performance.csv`, a
+per-sample runtime profile covering normalization, HVG selection, scaling, PCA,
+pK sweep and final DoubletFinder scoring. This artifact is operational
+evidence for comparing local Docker, VM and HPC performance; it is not a
+scientific decision gate. The DoubletFinder pK sweep can use
+`doublet.sweep_cores`, defaulting to `1`, so deployments can choose between
+per-sample parallelism and internal sweep parallelism without changing the
+scientific policy.
 
 The next scientific block is integration approval validation.
 
@@ -474,6 +482,7 @@ qc_filter_policy_phase
 qc_visualization_policy_phase
 split_seurat_by_sample_phase
 doublet_detection_scoring_phase
+doublet_detection_scoring_by_sample_phase
 doublet_policy_resolution_phase
 doublet_approval_phase
 doublet_filter_phase

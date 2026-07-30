@@ -115,6 +115,11 @@ PHASE_INPUTS = {
         "input_object": "qc_filtered_object",
         "doublet_config": "doublet_config",
     },
+    "doublet_detection_scoring_by_sample_phase": {
+        "sample_manifest": "sample_manifest",
+        "sample_objects": "sample_objects",
+        "doublet_config": "doublet_config",
+    },
     "doublet_policy_resolution_phase": {
         "summary": "doublet_detection_summary",
         "by_sample": "doublet_detection_by_sample",

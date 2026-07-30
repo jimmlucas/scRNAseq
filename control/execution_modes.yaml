@@ -175,6 +175,7 @@ execution_modes:
       - qc_visualization_policy_phase
       - split_seurat_by_sample_phase
       - doublet_detection_scoring_phase
+      - doublet_detection_scoring_by_sample_phase
       - doublet_policy_resolution_phase
       - doublet_approval_phase
       - doublet_filter_phase

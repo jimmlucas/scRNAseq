@@ -896,6 +896,61 @@ modules:
       - INTEGRATION
       - CLUSTERING
 
+  DOUBLET_DETECTION_SCORING_BY_SAMPLE:
+    stage: qc
+    process_name: DOUBLET_DETECTION_SCORE_SAMPLE
+    mode: doublet_detection_scoring_by_sample_phase
+    script: scripts/01g_doublet_detection_scoring.R
+    merge_script: scripts/01g_merge_doublet_detection_scoring.R
+    runtime_config: doublet_config.yaml
+
+    config_sections:
+      - project
+      - output
+      - doublet
+
+    input_artifacts:
+      - artifact_type: sample_manifest
+        path: 01f_split_seurat_by_sample/01f_split_by_sample_manifest.tsv
+
+      - artifact_type: sample_seurat_objects
+        path: 01f_split_seurat_by_sample/sample_objects
+
+    output_artifacts:
+      - artifact_type: doublet_scored_seurat
+        path: 01g_doublet_detection_scoring/seu_doublet_scored.rds
+
+      - artifact_type: metrics
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_summary.csv
+
+      - artifact_type: per_sample_metrics
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_by_sample.csv
+
+      - artifact_type: cell_metadata
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_cell_scores.csv
+
+      - artifact_type: metrics
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_pk_sweep.csv
+
+      - artifact_type: performance_metrics
+        path: 01g_doublet_detection_scoring/01g_doublet_detection_performance.csv
+
+      - artifact_type: session_info
+        path: 01g_doublet_detection_scoring/01g_sessionInfo.txt
+
+    checkpoint_after: PCC_DOUBLET_DETECTION_SCORED
+    resource_class: very_high_memory
+    can_start_from: true
+    can_resume_from_output: true
+
+    invalidates:
+      - DOUBLET_POLICY_RESOLUTION
+      - DOUBLET_FILTER
+      - QC_SCORES
+      - NORMALIZATION
+      - INTEGRATION
+      - CLUSTERING
+
   DOUBLET_POLICY_RESOLUTION:
     stage: qc_control
     process_name: DOUBLET_POLICY_RESOLUTION
