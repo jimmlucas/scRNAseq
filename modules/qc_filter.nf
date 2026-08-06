@@ -5,8 +5,8 @@ process QC_FILTER {
 
     publishDir "${params.outdir}/01_qc_filter", mode: 'copy'
 
-    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        "docker://${params.r_image.docker}" :
+    container "${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
+        "docker://${params.r_image}" :
         params.r_image}"
 
     input:

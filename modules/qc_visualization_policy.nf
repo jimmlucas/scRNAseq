@@ -13,8 +13,8 @@ process QC_VISUALIZATION_POLICY {
         overwrite: true
     )
 
-    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        "docker://${params.r_image.docker}" :
+    container "${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
+        "docker://${params.r_image}" :
         params.r_image}"
 
     input:

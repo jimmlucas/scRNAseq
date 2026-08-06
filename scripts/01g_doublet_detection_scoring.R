@@ -27,6 +27,15 @@ option_list <- list(
     type = "character",
     default = "seu_doublet_scored.rds",
     help = "Output Seurat RDS object annotated with doublet scores"
+  ),
+  make_option(
+    "--cores",
+    type = "integer",
+    default = NULL,
+    help = paste(
+      "CPU allocation supplied by the workflow.",
+      "Overrides doublet.sweep_cores when provided."
+    )
   )
 )
 
@@ -801,9 +810,11 @@ pN <- get_config_value(config, "doublet.pN", 0.25)
 pcs <- get_config_value(config, "doublet.pcs", 15)
 min_cells <- get_config_value(config, "doublet.min_cells", 500)
 nfeatures <- get_config_value(config, "doublet.nfeatures", 1500)
-sweep_cores <- as.integer(
-  get_config_value(config, "doublet.sweep_cores", 1)
-)
+sweep_cores <- if (!is.null(opt$cores)) {
+  as.integer(opt$cores)
+} else {
+  as.integer(get_config_value(config, "doublet.sweep_cores", 1))
+}
 
 if (
   is.na(sweep_cores) ||

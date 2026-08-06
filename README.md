@@ -399,10 +399,14 @@ Both doublet scoring modes publish `01g_doublet_detection_performance.csv`, a
 per-sample runtime profile covering normalization, HVG selection, scaling, PCA,
 pK sweep and final DoubletFinder scoring. This artifact is operational
 evidence for comparing local Docker, VM and HPC performance; it is not a
-scientific decision gate. The DoubletFinder pK sweep can use
-`doublet.sweep_cores`, defaulting to `1`, so deployments can choose between
-per-sample parallelism and internal sweep parallelism without changing the
-scientific policy.
+scientific decision gate. Nextflow passes the process allocation (`task.cpus`)
+to the DoubletFinder pK sweep. The allocation defaults to one CPU and can
+be changed with `--doublet_cpus` or `BBUDY_DOUBLET_CPUS`. A direct standalone
+invocation of the R script can still use `doublet.sweep_cores` when `--cores`
+is omitted. Doublet sample tasks have no `maxForks` cap, so Nextflow or the
+scheduler can run as many samples concurrently as available CPU, memory and
+queue limits permit. Deployments can therefore combine per-sample task
+parallelism and internal sweep parallelism without changing scientific policy.
 
 The next scientific block is integration approval validation.
 
@@ -540,12 +544,39 @@ ghcr.io/jimmlucas/scrnaseq-control-python@sha256:aa6427fba278d9b83cc9f12cc4152a8
 
 The control image contains `PyYAML` and is pinned in `nextflow.config`.
 
+## Server execution
+
+The repository provides `singularity`, `apptainer` and `slurm` profiles. The
+SLURM profile enables Singularity and reads site-specific settings from:
+
+```text
+BBUDY_SLURM_QUEUE
+BBUDY_SLURM_ACCOUNT
+BBUDY_WORK_DIR
+BBUDY_QUEUE_SIZE
+BBUDY_DOUBLET_CPUS
+NXF_SINGULARITY_CACHEDIR
+```
+
+Validate the resolved server configuration with:
+
+```bash
+tests/server_profile/run_tests.sh
+```
+
+The complete preflight and launch procedure is documented in:
+
+```text
+docs/server_execution.md
+```
+
 ## Tests
 
 Lightweight contract tests:
 
 ```bash
 tests/architecture/run_tests.sh
+tests/server_profile/run_tests.sh
 python3 -m py_compile scripts/control/*.py scripts/config/*.py
 ```
 

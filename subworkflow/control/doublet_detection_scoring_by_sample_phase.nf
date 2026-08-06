@@ -37,13 +37,13 @@ workflow DOUBLET_DETECTION_SCORING_BY_SAMPLE_PHASE {
         .combine(sample_objects_ch)
         .combine(scientific_meta_ch)
         .map { row, sample_objects_root, meta ->
-            relative_object = row.object_path.toString()
+            def relative_object = row.object_path.toString()
             relative_object = relative_object.replaceFirst(
                 /^sample_objects\//,
                 ''
             )
 
-            sample_safe_id = row.sample_safe_id.toString()
+            def sample_safe_id = row.sample_safe_id.toString()
 
             tuple(
                 meta + [

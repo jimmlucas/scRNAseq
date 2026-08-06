@@ -8,13 +8,13 @@ process DOUBLET_DETECTION_SCORE_SAMPLE {
     label 'very_high_memory'
 
     publishDir(
-        "${params.outdir}/01g_doublet_detection_scoring/per_sample/${meta.sample_safe_id}",
+        { "${params.outdir}/01g_doublet_detection_scoring/per_sample/${meta.sample_safe_id}" },
         mode: 'copy',
         overwrite: true
     )
 
-    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        "docker://${params.r_image.docker}" :
+    container "${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
+        "docker://${params.r_image}" :
         params.r_image}"
 
     input:
@@ -61,6 +61,7 @@ process DOUBLET_DETECTION_SCORE_SAMPLE {
     Rscript ${doublet_detection_script} \
         --input ${sample_object} \
         --config ${config_file} \
+        --cores ${task.cpus} \
         --output seu_doublet_scored.${meta.sample_safe_id}.rds
 
     mv 01g_doublet_detection_summary.csv \

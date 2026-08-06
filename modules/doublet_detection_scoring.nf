@@ -13,8 +13,8 @@ process DOUBLET_DETECTION_SCORING {
         overwrite: true
     )
 
-    container "${workflow.containerEngine == 'singularity' && !task.ext.singularity_pull_docker_container ?
-        "docker://${params.r_image.docker}" :
+    container "${workflow.containerEngine in ['singularity', 'apptainer'] && !task.ext.singularity_pull_docker_container ?
+        "docker://${params.r_image}" :
         params.r_image}"
 
     input:
@@ -74,6 +74,7 @@ process DOUBLET_DETECTION_SCORING {
     Rscript ${doublet_detection_script} \
         --input ${filtered_object} \
         --config ${config_file} \
+        --cores ${task.cpus} \
         --output seu_doublet_scored.rds
     """
 
