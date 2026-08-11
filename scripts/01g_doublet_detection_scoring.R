@@ -388,8 +388,303 @@ select_best_pk <- function(sweep_stats) {
 
   list(
     best_pk = best_pk,
+    best_bcmetric = as.numeric(BCmetric_numeric[[best_index]]),
+    best_index = best_index,
     bcmvn = bcmvn
   )
+}
+
+resolve_sweep_size <- function(total_cells, min_cells, fraction, max_cells) {
+  target <- floor(total_cells * fraction)
+  target <- max(min_cells, target)
+  target <- min(max_cells, target, total_cells)
+  as.integer(target)
+}
+
+allocate_stratified_quota <- function(stratum_sizes, target_cells) {
+  stratum_names <- names(stratum_sizes)
+  stratum_sizes <- as.integer(stratum_sizes)
+  names(stratum_sizes) <- stratum_names
+  if (is.null(names(stratum_sizes)) || any(!nzchar(names(stratum_sizes)))) {
+    stop("Stratum sizes must preserve non-empty names.")
+  }
+
+  exact_quota <- target_cells * stratum_sizes / sum(stratum_sizes)
+  names(exact_quota) <- names(stratum_sizes)
+  quota <- floor(exact_quota)
+  names(quota) <- names(stratum_sizes)
+  quota <- pmax(1L, quota)
+  names(quota) <- names(stratum_sizes)
+  quota <- pmin(quota, stratum_sizes)
+  names(quota) <- names(stratum_sizes)
+
+  while (sum(quota) > target_cells) {
+    candidates <- names(quota)[quota > 1L]
+    if (length(candidates) == 0) break
+    chosen <- candidates[[which.max(quota[candidates] - exact_quota[candidates])]]
+    quota[[chosen]] <- quota[[chosen]] - 1L
+  }
+
+  while (sum(quota) < target_cells) {
+    capacity <- stratum_sizes - quota
+    names(capacity) <- names(quota)
+    candidates <- names(capacity)[capacity > 0L]
+    if (length(candidates) == 0) break
+    residual <- exact_quota[candidates] - quota[candidates]
+    chosen <- candidates[[which.max(residual)]]
+    quota[[chosen]] <- quota[[chosen]] + 1L
+  }
+
+  if (sum(quota) != target_cells) {
+    stop("Unable to allocate the requested stratified sample size.")
+  }
+
+  quota
+}
+
+pca_stratified_cells <- function(
+    obj,
+    target_cells,
+    pcs_use,
+    seed,
+    max_strata = 20L
+) {
+  all_cells <- colnames(obj)
+
+  if (target_cells >= length(all_cells)) {
+    return(all_cells)
+  }
+
+  embeddings <- Embeddings(obj, reduction = "pca")
+  dimensions <- intersect(pcs_use, seq_len(ncol(embeddings)))
+
+  if (length(dimensions) == 0) {
+    set.seed(seed)
+    return(sample(all_cells, target_cells, replace = FALSE))
+  }
+
+  coordinates <- embeddings[all_cells, dimensions, drop = FALSE]
+  unique_coordinates <- nrow(unique(as.data.frame(coordinates)))
+  if (unique_coordinates < 2L) {
+    set.seed(seed)
+    return(sample(all_cells, target_cells, replace = FALSE))
+  }
+
+  strata_count <- min(
+    as.integer(max_strata),
+    max(2L, as.integer(floor(sqrt(target_cells / 25)))),
+    nrow(coordinates),
+    unique_coordinates
+  )
+
+  set.seed(seed)
+  clusters <- stats::kmeans(
+    coordinates,
+    centers = strata_count,
+    iter.max = 50,
+    nstart = 1
+  )$cluster
+
+  strata <- as.character(clusters)
+  names(strata) <- rownames(coordinates)
+  stratum_sizes <- table(strata)
+  quota <- allocate_stratified_quota(stratum_sizes, target_cells)
+
+  set.seed(seed)
+  selected <- unlist(
+    lapply(names(quota), function(stratum) {
+      candidates <- names(strata)[strata == stratum]
+      sample(candidates, quota[[stratum]], replace = FALSE)
+    }),
+    use.names = FALSE
+  )
+
+  if (length(selected) != target_cells) {
+    stop(
+      "PCA-stratified sampling returned ",
+      length(selected),
+      " cells instead of ",
+      target_cells,
+      "."
+    )
+  }
+
+  selected
+}
+
+run_pk_sweep <- function(
+    obj,
+    pcs_use,
+    pN,
+    sweep_cores,
+    target_cells,
+    seed,
+    iteration
+) {
+  selected_cells <- pca_stratified_cells(
+    obj = obj,
+    target_cells = target_cells,
+    pcs_use = pcs_use,
+    seed = seed
+  )
+  sweep_obj <- if (length(selected_cells) < ncol(obj)) {
+    subset(obj, cells = selected_cells)
+  } else {
+    obj
+  }
+  sampling_method <- if (length(selected_cells) < ncol(obj)) {
+    "pca_stratified"
+  } else {
+    "all_cells"
+  }
+
+  timed <- time_step(
+    call_with_supported_args(
+      fun = paramSweep_fun,
+      args = list(
+        seu = sweep_obj,
+        PCs = seq_len(min(length(pcs_use), ncol(sweep_obj) - 1L)),
+        sct = FALSE,
+        pN = pN,
+        num.cores = sweep_cores
+      )
+    )
+  )
+  sweep_stats <- summarizeSweep_fun(timed$value, GT = FALSE)
+  selected <- select_best_pk(sweep_stats)
+  evidence <- selected$bcmvn
+  evidence$sweep_iteration <- iteration
+  evidence$sweep_seed <- seed
+  evidence$sweep_cells <- length(selected_cells)
+  evidence$sampling_method <- sampling_method
+  evidence$selected <- seq_len(nrow(evidence)) == selected$best_index
+
+  rm(sweep_obj)
+  gc()
+
+  list(
+    best_pk = selected$best_pk,
+    best_bcmetric = selected$best_bcmetric,
+    evidence = evidence,
+    seconds = timed$seconds,
+    sweep_cells = length(selected_cells),
+    sampling_method = sampling_method
+  )
+}
+
+resolve_pk <- function(
+    obj,
+    pcs_use,
+    pN,
+    sweep_cores,
+    pk_mode,
+    fixed_pk,
+    sweep_min_cells,
+    sweep_fraction,
+    sweep_max_cells,
+    sweep_seed_primary,
+    sweep_seed_secondary,
+    pk_tolerance,
+    sweep_scale_factor
+) {
+  if (identical(pk_mode, "fixed")) {
+    if (is.null(fixed_pk) || length(fixed_pk) != 1L ||
+        is.na(fixed_pk) || !is.finite(fixed_pk) || fixed_pk <= 0) {
+      stop("doublet.fixed_pk must be a positive finite number in fixed mode.")
+    }
+
+    return(list(
+      best_pk = as.numeric(fixed_pk),
+      best_bcmetric = NA_real_,
+      evidence = data.frame(
+        pK_numeric = as.numeric(fixed_pk),
+        BCmetric_numeric = NA_real_,
+        sweep_iteration = 0L,
+        sweep_seed = NA_integer_,
+        sweep_cells = 0L,
+        sampling_method = "fixed",
+        selected = TRUE
+      ),
+      seconds = 0,
+      sweep_cells = 0L,
+      sampling_method = "fixed",
+      stable = TRUE,
+      pk_delta = 0,
+      attempts = 0L,
+      source = "configured_fixed_pk"
+    ))
+  }
+
+  if (identical(pk_mode, "sweep")) {
+    result <- run_pk_sweep(
+      obj, pcs_use, pN, sweep_cores, ncol(obj),
+      sweep_seed_primary, 1L
+    )
+    return(c(
+      result,
+      list(
+        stable = NA,
+        pk_delta = NA_real_,
+        attempts = 1L,
+        source = "exhaustive_sweep"
+      )
+    ))
+  }
+
+  target <- resolve_sweep_size(
+    ncol(obj), sweep_min_cells, sweep_fraction, sweep_max_cells
+  )
+  max_target <- min(as.integer(sweep_max_cells), ncol(obj))
+  all_evidence <- list()
+  total_seconds <- 0
+  attempts <- 0L
+
+  repeat {
+    attempts <- attempts + 1L
+    first <- run_pk_sweep(
+      obj, pcs_use, pN, sweep_cores, target,
+      sweep_seed_primary, attempts * 2L - 1L
+    )
+    second <- run_pk_sweep(
+      obj, pcs_use, pN, sweep_cores, target,
+      sweep_seed_secondary, attempts * 2L
+    )
+    all_evidence <- c(all_evidence, list(first$evidence, second$evidence))
+    total_seconds <- total_seconds + first$seconds + second$seconds
+    pk_delta <- abs(first$best_pk - second$best_pk)
+    stable <- pk_delta <= pk_tolerance
+
+    candidates <- list(first, second)
+    metrics <- c(first$best_bcmetric, second$best_bcmetric)
+    chosen <- candidates[[which.max(metrics)]]
+
+    if (stable || target >= max_target) {
+      evidence <- dplyr::bind_rows(all_evidence)
+      evidence$selected_final <- FALSE
+      final_rows <- which(
+        evidence$selected &
+          evidence$sweep_iteration %in% c(attempts * 2L - 1L, attempts * 2L) &
+          abs(evidence$pK_numeric - chosen$best_pk) < .Machine$double.eps^0.5
+      )
+      if (length(final_rows) > 0) evidence$selected_final[[final_rows[[1]]]] <- TRUE
+
+      return(list(
+        best_pk = chosen$best_pk,
+        best_bcmetric = chosen$best_bcmetric,
+        evidence = evidence,
+        seconds = total_seconds,
+        sweep_cells = target,
+        sampling_method = chosen$sampling_method,
+        stable = stable,
+        pk_delta = pk_delta,
+        attempts = attempts * 2L,
+        source = if (stable) "adaptive_stable" else "adaptive_max_cells"
+      ))
+    }
+
+    expanded <- ceiling(target * sweep_scale_factor)
+    target <- min(max_target, max(target + 1L, expanded))
+  }
 }
 
 get_doubletfinder_columns <- function(meta_before, meta_after) {
@@ -452,6 +747,15 @@ skipped_sample_result <- function(
     expected_doublet_rate = expected_doublet_rate,
     pN = pN,
     pK = NA_real_,
+    pk_mode = NA_character_,
+    pk_source = status,
+    pk_stable = NA,
+    pk_delta = NA_real_,
+    selected_bcmetric = NA_real_,
+    sweep_cells = 0L,
+    sweep_fraction = 0,
+    sampling_method = "not_run",
+    sweep_attempts = 0L,
     nExp_raw = NA_integer_,
     homotypic_prop = NA_real_,
     nExp_adjusted = NA_integer_,
@@ -473,6 +777,15 @@ skipped_sample_result <- function(
       nfeatures = nfeatures,
       pcs = pcs,
       sweep_cores = sweep_cores,
+      pk_mode = NA_character_,
+      pk_source = status,
+      pk_stable = NA,
+      pk_delta = NA_real_,
+      selected_bcmetric = NA_real_,
+      sweep_cells = 0L,
+      sweep_fraction = 0,
+      sampling_method = "not_run",
+      sweep_attempts = 0L,
       normalize_seconds = NA_real_,
       find_variable_features_seconds = NA_real_,
       scale_data_seconds = NA_real_,
@@ -495,6 +808,15 @@ run_doubletfinder_one_sample <- function(
     min_cells,
     nfeatures,
     sweep_cores,
+    pk_mode,
+    fixed_pk,
+    sweep_min_cells,
+    sweep_fraction,
+    sweep_max_cells,
+    sweep_seed_primary,
+    sweep_seed_secondary,
+    pk_tolerance,
+    sweep_scale_factor,
     reuse_pANN = NULL
 ) {
   message_step(paste0("Scoring sample: ", sample_id))
@@ -601,39 +923,35 @@ run_doubletfinder_one_sample <- function(
   pcs_use <- seq_len(max_pcs)
 
   message(
-    "[",
-    sample_id,
-    "] paramSweep started with num.cores = ",
-    sweep_cores
+    "[", sample_id, "] pK resolution started | mode = ", pk_mode,
+    " | num.cores = ", sweep_cores
   )
 
-  t_sweep <- time_step(
-    call_with_supported_args(
-      fun = paramSweep_fun,
-      args = list(
-        seu = obj,
-        PCs = pcs_use,
-        sct = FALSE,
-        pN = pN,
-        num.cores = sweep_cores
-      )
-    )
+  pk_res <- resolve_pk(
+    obj = obj,
+    pcs_use = pcs_use,
+    pN = pN,
+    sweep_cores = sweep_cores,
+    pk_mode = pk_mode,
+    fixed_pk = fixed_pk,
+    sweep_min_cells = sweep_min_cells,
+    sweep_fraction = sweep_fraction,
+    sweep_max_cells = sweep_max_cells,
+    sweep_seed_primary = sweep_seed_primary,
+    sweep_seed_secondary = sweep_seed_secondary,
+    pk_tolerance = pk_tolerance,
+    sweep_scale_factor = sweep_scale_factor
   )
-  sweep_res <- t_sweep$value
-
-  message_timed(
-    sample_id,
-    "paramSweep",
-    t_sweep$seconds
-  )
-
-  sweep_stats <- summarizeSweep_fun(
-    sweep_res,
-    GT = FALSE
-  )
-
-  pk_res <- select_best_pk(sweep_stats)
   best_pk <- pk_res$best_pk
+
+  message_timed(sample_id, "pK resolution", pk_res$seconds)
+  message(
+    "[", sample_id, "] pK = ", best_pk,
+    " | source = ", pk_res$source,
+    " | stable = ", pk_res$stable,
+    " | sweep cells = ", pk_res$sweep_cells,
+    " / ", ncol(obj)
+  )
 
   if (
     !is.numeric(best_pk) ||
@@ -650,8 +968,9 @@ run_doubletfinder_one_sample <- function(
 
   best_pk <- as.numeric(best_pk)
 
-  bcmvn <- pk_res$bcmvn
+  bcmvn <- pk_res$evidence
   bcmvn$sample <- sample_id
+  bcmvn$pk_mode <- pk_mode
 
   nExp_raw <- max(
     1,
@@ -742,6 +1061,15 @@ run_doubletfinder_one_sample <- function(
     expected_doublet_rate = expected_doublet_rate,
     pN = pN,
     pK = best_pk,
+    pk_mode = pk_mode,
+    pk_source = pk_res$source,
+    pk_stable = pk_res$stable,
+    pk_delta = pk_res$pk_delta,
+    selected_bcmetric = pk_res$best_bcmetric,
+    sweep_cells = pk_res$sweep_cells,
+    sweep_fraction = pk_res$sweep_cells / ncol(obj),
+    sampling_method = pk_res$sampling_method,
+    sweep_attempts = pk_res$attempts,
     nExp_raw = nExp_raw,
     homotypic_prop = homotypic_prop,
     nExp_adjusted = nExp_adjusted,
@@ -758,7 +1086,7 @@ run_doubletfinder_one_sample <- function(
     prep_timings$find_variable_features_seconds,
     prep_timings$scale_data_seconds,
     prep_timings$run_pca_seconds,
-    t_sweep$seconds,
+    pk_res$seconds,
     t_df$seconds,
     na.rm = TRUE
   )
@@ -769,12 +1097,21 @@ run_doubletfinder_one_sample <- function(
     nfeatures = length(variable_features),
     pcs = length(pcs_use),
     sweep_cores = sweep_cores,
+    pk_mode = pk_mode,
+    pk_source = pk_res$source,
+    pk_stable = pk_res$stable,
+    pk_delta = pk_res$pk_delta,
+    selected_bcmetric = pk_res$best_bcmetric,
+    sweep_cells = pk_res$sweep_cells,
+    sweep_fraction = pk_res$sweep_cells / ncol(obj),
+    sampling_method = pk_res$sampling_method,
+    sweep_attempts = pk_res$attempts,
     normalize_seconds = prep_timings$normalize_seconds,
     find_variable_features_seconds =
       prep_timings$find_variable_features_seconds,
     scale_data_seconds = prep_timings$scale_data_seconds,
     run_pca_seconds = prep_timings$run_pca_seconds,
-    param_sweep_seconds = t_sweep$seconds,
+    param_sweep_seconds = pk_res$seconds,
     doublet_finder_seconds = t_df$seconds,
     total_seconds = total_seconds,
     stringsAsFactors = FALSE
@@ -810,6 +1147,36 @@ pN <- get_config_value(config, "doublet.pN", 0.25)
 pcs <- get_config_value(config, "doublet.pcs", 15)
 min_cells <- get_config_value(config, "doublet.min_cells", 500)
 nfeatures <- get_config_value(config, "doublet.nfeatures", 1500)
+pk_mode <- tolower(as.character(
+  get_config_value(config, "doublet.pk_mode", "auto")
+))
+fixed_pk <- get_config_value(
+  config,
+  "doublet.fixed_pk",
+  get_config_value(config, "doublet.pK", NULL)
+)
+if (!is.null(fixed_pk)) fixed_pk <- suppressWarnings(as.numeric(fixed_pk))
+sweep_min_cells <- as.integer(
+  get_config_value(config, "doublet.sweep.min_cells", 2000)
+)
+sweep_fraction <- as.numeric(
+  get_config_value(config, "doublet.sweep.fraction", 0.5)
+)
+sweep_max_cells <- as.integer(
+  get_config_value(config, "doublet.sweep.max_cells", 5000)
+)
+sweep_seed_primary <- as.integer(
+  get_config_value(config, "doublet.sweep.seed_primary", 1234)
+)
+sweep_seed_secondary <- as.integer(
+  get_config_value(config, "doublet.sweep.seed_secondary", 4321)
+)
+pk_tolerance <- as.numeric(
+  get_config_value(config, "doublet.sweep.pk_tolerance", 0.01)
+)
+sweep_scale_factor <- as.numeric(
+  get_config_value(config, "doublet.sweep.scale_factor", 1.5)
+)
 sweep_cores <- if (!is.null(opt$cores)) {
   as.integer(opt$cores)
 } else {
@@ -822,6 +1189,25 @@ if (
     sweep_cores < 1
 ) {
   stop("doublet.sweep_cores must be a positive integer.")
+}
+
+if (!pk_mode %in% c("auto", "sweep", "fixed")) {
+  stop("doublet.pk_mode must be one of: auto, sweep, fixed.")
+}
+if (is.na(sweep_min_cells) || sweep_min_cells < 1L) {
+  stop("doublet.sweep.min_cells must be a positive integer.")
+}
+if (is.na(sweep_max_cells) || sweep_max_cells < sweep_min_cells) {
+  stop("doublet.sweep.max_cells must be >= sweep.min_cells.")
+}
+if (is.na(sweep_fraction) || sweep_fraction <= 0 || sweep_fraction > 1) {
+  stop("doublet.sweep.fraction must be in (0, 1].")
+}
+if (is.na(pk_tolerance) || pk_tolerance < 0) {
+  stop("doublet.sweep.pk_tolerance must be >= 0.")
+}
+if (is.na(sweep_scale_factor) || sweep_scale_factor <= 1) {
+  stop("doublet.sweep.scale_factor must be > 1.")
 }
 
 message_step("Loading QC-filtered Seurat object")
@@ -878,6 +1264,15 @@ results <- lapply(
   min_cells = min_cells,
   nfeatures = nfeatures,
   sweep_cores = sweep_cores,
+  pk_mode = pk_mode,
+  fixed_pk = fixed_pk,
+  sweep_min_cells = sweep_min_cells,
+  sweep_fraction = sweep_fraction,
+  sweep_max_cells = sweep_max_cells,
+  sweep_seed_primary = sweep_seed_primary,
+  sweep_seed_secondary = sweep_seed_secondary,
+  pk_tolerance = pk_tolerance,
+  sweep_scale_factor = sweep_scale_factor,
   reuse_pANN = NULL
 )
 
@@ -954,6 +1349,14 @@ overall_summary <- data.frame(
     "min_cells",
     "nfeatures",
     "sweep_cores",
+    "pk_mode",
+    "sweep_min_cells",
+    "sweep_fraction",
+    "sweep_max_cells",
+    "sweep_seed_primary",
+    "sweep_seed_secondary",
+    "pk_tolerance",
+    "sweep_scale_factor",
     "approval_status"
   ),
   value = c(
@@ -971,6 +1374,14 @@ overall_summary <- data.frame(
     min_cells,
     nfeatures,
     sweep_cores,
+    pk_mode,
+    sweep_min_cells,
+    sweep_fraction,
+    sweep_max_cells,
+    sweep_seed_primary,
+    sweep_seed_secondary,
+    pk_tolerance,
+    sweep_scale_factor,
     "proposed"
   )
 )

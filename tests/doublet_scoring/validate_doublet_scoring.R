@@ -39,6 +39,11 @@ performance_csv <- file.path(
   "01g_doublet_detection_performance.csv"
 )
 
+pk_sweep_csv <- file.path(
+  output_dir,
+  "01g_doublet_detection_pk_sweep.csv"
+)
+
 required_files <- c(
   input_path,
   output_rds,
@@ -46,10 +51,7 @@ required_files <- c(
   by_sample_csv,
   cell_scores_csv,
   performance_csv,
-  file.path(
-    output_dir,
-    "01g_doublet_detection_pk_sweep.csv"
-  ),
+  pk_sweep_csv,
   file.path(
     output_dir,
     "01g_sessionInfo.txt"
@@ -179,7 +181,25 @@ stopifnot(
     by_sample$doublet_decision_status == "unreviewed"
   ),
   sum(by_sample$cells_scored) == 392L,
-  sum(by_sample$proposed_doublets) == 29L
+  sum(by_sample$proposed_doublets) == 29L,
+  all(by_sample$pk_mode == "auto"),
+  all(by_sample$pk_source == "adaptive_stable"),
+  all(by_sample$pk_stable),
+  all(by_sample$sweep_cells == by_sample$cells_scored),
+  all(by_sample$sweep_attempts == 2L)
+)
+
+pk_sweep <- read.csv(
+  pk_sweep_csv,
+  stringsAsFactors = FALSE,
+  check.names = FALSE
+)
+
+stopifnot(
+  all(pk_sweep$pk_mode == "auto"),
+  all(pk_sweep$sampling_method == "all_cells"),
+  all(pk_sweep$sweep_seed %in% c(1234L, 4321L)),
+  sum(pk_sweep$selected_final) == 2L
 )
 
 cell_scores <- read.csv(
@@ -212,6 +232,15 @@ required_performance_columns <- c(
   "nfeatures",
   "pcs",
   "sweep_cores",
+  "pk_mode",
+  "pk_source",
+  "pk_stable",
+  "pk_delta",
+  "selected_bcmetric",
+  "sweep_cells",
+  "sweep_fraction",
+  "sampling_method",
+  "sweep_attempts",
   "normalize_seconds",
   "find_variable_features_seconds",
   "scale_data_seconds",
@@ -240,6 +269,10 @@ stopifnot(
   all(performance$nfeatures <= 1000L),
   all(performance$pcs == 10L),
   all(performance$sweep_cores >= 1L),
+  all(performance$pk_mode == "auto"),
+  all(performance$pk_stable),
+  all(performance$sweep_cells == performance$cells),
+  all(performance$sweep_attempts == 2L),
   all(performance$total_seconds >= 0),
   all(performance$param_sweep_seconds >= 0)
 )

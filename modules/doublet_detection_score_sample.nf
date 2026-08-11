@@ -97,8 +97,8 @@ process DOUBLET_DETECTION_SCORE_SAMPLE {
     CSV
 
     cat > 01g_doublet_detection_by_sample.${meta.sample_safe_id}.csv <<CSV
-    sample,cells_scored,expected_doublet_rate,pN,pK,nExp_raw,homotypic_prop,nExp_adjusted,proposed_singlets,proposed_doublets,doublet_detection_status,doublet_decision_status,approval_status
-    ${meta.sample},0,0.075,0.25,NA,0,0,0,0,0,stub,unreviewed,proposed
+    sample,cells_scored,expected_doublet_rate,pN,pK,pk_mode,pk_source,pk_stable,pk_delta,selected_bcmetric,sweep_cells,sweep_fraction,sampling_method,sweep_attempts,nExp_raw,homotypic_prop,nExp_adjusted,proposed_singlets,proposed_doublets,doublet_detection_status,doublet_decision_status,approval_status
+    ${meta.sample},0,0.075,0.25,NA,auto,stub,NA,NA,NA,0,0,not_run,0,0,0,0,0,0,stub,unreviewed,proposed
     CSV
 
     cat > 01g_doublet_detection_cell_scores.${meta.sample_safe_id}.csv <<'CSV'
@@ -106,12 +106,12 @@ process DOUBLET_DETECTION_SCORE_SAMPLE {
     CSV
 
     cat > 01g_doublet_detection_pk_sweep.${meta.sample_safe_id}.csv <<'CSV'
-    sample,pK,BCmetric
+    sample,pk_mode,pK_numeric,BCmetric_numeric,sweep_iteration,sweep_seed,sweep_cells,sampling_method,selected,selected_final
     CSV
 
     cat > 01g_doublet_detection_performance.${meta.sample_safe_id}.csv <<CSV
-    sample,cells,nfeatures,pcs,sweep_cores,normalize_seconds,find_variable_features_seconds,scale_data_seconds,run_pca_seconds,param_sweep_seconds,doublet_finder_seconds,total_seconds
-    ${meta.sample},0,0,0,1,0,0,0,0,0,0,0
+    sample,cells,nfeatures,pcs,sweep_cores,pk_mode,pk_source,pk_stable,pk_delta,selected_bcmetric,sweep_cells,sweep_fraction,sampling_method,sweep_attempts,normalize_seconds,find_variable_features_seconds,scale_data_seconds,run_pca_seconds,param_sweep_seconds,doublet_finder_seconds,total_seconds
+    ${meta.sample},0,0,0,1,auto,stub,NA,NA,NA,0,0,not_run,0,0,0,0,0,0,0,0
     CSV
 
     cat > 01g_sessionInfo.${meta.sample_safe_id}.txt <<'TXT'

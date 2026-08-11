@@ -24,6 +24,8 @@ export BBUDY_SLURM_ACCOUNT=my_account
 export BBUDY_WORK_DIR=/shared/scratch/my_project/nextflow-work
 export BBUDY_QUEUE_SIZE=20
 export BBUDY_DOUBLET_CPUS=1
+export BBUDY_DOUBLET_MAX_FORKS=3
+export BBUDY_DOUBLET_TIME=72
 export NXF_SINGULARITY_CACHEDIR=/shared/containers/nextflow
 ```
 
@@ -33,11 +35,12 @@ or another high-throughput shared filesystem. Do not put `work` on a small
 home filesystem.
 
 `BBUDY_DOUBLET_CPUS` controls the CPU allocation inside each DoubletFinder
-scoring task. Its default is 1. There is no `maxForks` cap on these tasks:
-Nextflow can run several samples concurrently and the local executor or SLURM
-decides how many fit according to requested CPUs, memory, queue limits and
-current capacity. Increase `BBUDY_DOUBLET_CPUS` only when internal
-DoubletFinder sweep parallelism is preferred over sample-level parallelism.
+scoring task and defaults to 1. `BBUDY_DOUBLET_MAX_FORKS` independently limits
+the number of samples in flight and defaults to 3. `BBUDY_DOUBLET_TIME` is the
+initial walltime in hours and defaults to 72. SLURM still decides when those
+tasks fit according to requested CPUs, memory and current cluster capacity.
+Increase internal CPUs only when sweep parallelism is preferred over
+sample-level parallelism.
 
 ## Preflight
 

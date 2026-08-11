@@ -26,6 +26,8 @@ BBUDY_SLURM_ACCOUNT=scrna \
 BBUDY_WORK_DIR="$TMP_DIR/work" \
 BBUDY_QUEUE_SIZE=7 \
 BBUDY_DOUBLET_CPUS=1 \
+BBUDY_DOUBLET_MAX_FORKS=3 \
+BBUDY_DOUBLET_TIME=72 \
   nextflow config -profile slurm . >"$TMP_DIR/slurm.config"
 
 nextflow config -profile singularity . >"$TMP_DIR/singularity.config"
@@ -38,11 +40,10 @@ grep -q "queueSize = 7" "$TMP_DIR/slurm.config"
 grep -q "workDir = '$TMP_DIR/work'" "$TMP_DIR/slurm.config"
 grep -A3 "DOUBLET_DETECTION_SCORING" "$TMP_DIR/slurm.config" \
   | grep -q "cpus = 1"
-
-if grep -q "maxForks" "$TMP_DIR/slurm.config"; then
-  echo "ERROR: SLURM profile unexpectedly limits process parallelism." >&2
-  exit 1
-fi
+grep -A5 "DOUBLET_DETECTION_SCORING" "$TMP_DIR/slurm.config" \
+  | grep -q "maxForks = 3"
+grep -A5 "DOUBLET_DETECTION_SCORING" "$TMP_DIR/slurm.config" \
+  | grep -q "doublet_time.h"
 
 grep -A4 "withLabel:very_high_memory" "$TMP_DIR/slurm.config" \
   | grep -q "72.h"

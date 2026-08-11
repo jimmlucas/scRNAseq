@@ -131,6 +131,86 @@ parameters:
       - QC_DOUBLET_DETECTION
     requires_user_approval: true
 
+  doublet.pk_mode:
+    type: string
+    section: doublet
+    allowed_values:
+      - auto
+      - sweep
+      - fixed
+    default: auto
+    description: Strategy used to estimate or provide DoubletFinder pK.
+    affects:
+      - DOUBLET_DETECTION_SCORING
+      - DOUBLET_DETECTION_SCORE_SAMPLE
+    requires_user_approval: true
+
+  doublet.fixed_pk:
+    type: number
+    section: doublet
+    minimum: 0
+    description: Fixed pK used only when doublet.pk_mode is fixed.
+    affects:
+      - DOUBLET_DETECTION_SCORING
+      - DOUBLET_DETECTION_SCORE_SAMPLE
+    requires_user_approval: true
+
+  doublet.sweep.min_cells:
+    type: integer
+    section: doublet.sweep
+    minimum: 1
+    default: 2000
+    description: Minimum number of cells used by adaptive pK sweeps.
+    affects:
+      - DOUBLET_DETECTION_SCORING
+      - DOUBLET_DETECTION_SCORE_SAMPLE
+    requires_user_approval: true
+
+  doublet.sweep.fraction:
+    type: number
+    section: doublet.sweep
+    minimum: 0
+    maximum: 1
+    default: 0.5
+    description: Initial fraction of sample cells used by adaptive pK sweeps.
+    affects:
+      - DOUBLET_DETECTION_SCORING
+      - DOUBLET_DETECTION_SCORE_SAMPLE
+    requires_user_approval: true
+
+  doublet.sweep.max_cells:
+    type: integer
+    section: doublet.sweep
+    minimum: 1
+    default: 5000
+    description: Maximum number of cells used by adaptive pK sweeps.
+    affects:
+      - DOUBLET_DETECTION_SCORING
+      - DOUBLET_DETECTION_SCORE_SAMPLE
+    requires_user_approval: true
+
+  doublet.sweep.pk_tolerance:
+    type: number
+    section: doublet.sweep
+    minimum: 0
+    default: 0.01
+    description: Maximum pK difference accepted between stability seeds.
+    affects:
+      - DOUBLET_DETECTION_SCORING
+      - DOUBLET_DETECTION_SCORE_SAMPLE
+    requires_user_approval: true
+
+  doublet.sweep.scale_factor:
+    type: number
+    section: doublet.sweep
+    minimum: 1
+    default: 1.5
+    description: Sweep-size expansion factor used when pK is unstable.
+    affects:
+      - DOUBLET_DETECTION_SCORING
+      - DOUBLET_DETECTION_SCORE_SAMPLE
+    requires_user_approval: true
+
   scoring.scale_factor:
     type: integer
     section: scoring

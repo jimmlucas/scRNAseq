@@ -403,10 +403,29 @@ scientific decision gate. Nextflow passes the process allocation (`task.cpus`)
 to the DoubletFinder pK sweep. The allocation defaults to one CPU and can
 be changed with `--doublet_cpus` or `BBUDY_DOUBLET_CPUS`. A direct standalone
 invocation of the R script can still use `doublet.sweep_cores` when `--cores`
-is omitted. Doublet sample tasks have no `maxForks` cap, so Nextflow or the
-scheduler can run as many samples concurrently as available CPU, memory and
-queue limits permit. Deployments can therefore combine per-sample task
+is omitted. `--doublet_max_forks` controls sample-level concurrency separately
+and defaults to three, while `--doublet_time` controls initial walltime in
+hours and defaults to 72. Deployments can therefore combine per-sample task
 parallelism and internal sweep parallelism without changing scientific policy.
+
+### Adaptive DoubletFinder pK selection
+
+`scripts/01g_doublet_detection_scoring.R` supports three `doublet.pk_mode`
+values:
+
+```text
+auto   PCA-stratified pK sweeps with two seeds and stability checking
+sweep  exhaustive pK sweep over every cell (legacy behavior)
+fixed  skip paramSweep and use doublet.fixed_pk
+```
+
+`auto` is the backwards-compatible default when `pk_mode` is absent. It starts
+with `max(2000, floor(0.5 * cells))`, capped at 5000 cells, compares seeds 1234
+and 4321 with a pK tolerance of 0.01, and expands the sweep by 1.5 when the
+result is unstable. Only pK estimation is subsampled; final DoubletFinder
+classification always runs on every cell in the sample. Sweep size, sampling
+method, BCmetric, stability and timing evidence are published in the pK and
+performance tables.
 
 The next scientific block is integration approval validation.
 
@@ -555,6 +574,8 @@ BBUDY_SLURM_ACCOUNT
 BBUDY_WORK_DIR
 BBUDY_QUEUE_SIZE
 BBUDY_DOUBLET_CPUS
+BBUDY_DOUBLET_MAX_FORKS
+BBUDY_DOUBLET_TIME
 NXF_SINGULARITY_CACHEDIR
 ```
 
@@ -577,6 +598,7 @@ Lightweight contract tests:
 ```bash
 tests/architecture/run_tests.sh
 tests/server_profile/run_tests.sh
+tests/doublet_pk_strategy/run_tests.sh
 python3 -m py_compile scripts/control/*.py scripts/config/*.py
 ```
 
