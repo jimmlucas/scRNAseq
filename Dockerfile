@@ -38,6 +38,10 @@ RUN Rscript -e "options(timeout=600); remotes::install_github('chris-mcginnis-uc
 # Fail the build if any requested package is missing or fails to load.
 RUN Rscript -e "pkgs <- c('optparse','yaml','tidyverse','data.table','ggplot2','pheatmap','patchwork','cowplot','Matrix','hdf5r','Seurat','SeuratObject','remotes','bookdown','rmarkdown','knitr','SingleCellExperiment','SummarizedExperiment','scater','scran','DropletUtils','BiocParallel','DESeq2','edgeR','limma','ComplexHeatmap','clusterProfiler','enrichplot','DOSE','GO.db','org.Hs.eg.db','org.Mm.eg.db','AnnotationDbi','AnnotationHub','biomaRt','DoubletFinder'); invisible(lapply(pkgs, function(pkg) { library(pkg, character.only=TRUE); message('OK: ',pkg) })); stopifnot(as.character(BiocManager::version()) == '3.21'); sessionInfo()"
 
+# Record the actual versions after every installation step has completed.
+COPY scripts/export_environment_manifest.R /usr/local/bin/export_environment_manifest.R
+RUN Rscript /usr/local/bin/export_environment_manifest.R /opt/environment-manifest.yml
+
 RUN echo 'conda activate scrnaseq' >> /root/.bashrc
 
 WORKDIR /workspace
