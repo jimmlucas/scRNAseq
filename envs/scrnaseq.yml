@@ -1,0 +1,46 @@
+name: scrnaseq
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  # Bioconductor 3.21 is paired with R 4.5.
+  - r-base=4.5
+  - bioconductor-biocversion=3.21
+  - r-biocmanager
+  - r-optparse
+  - r-yaml
+  - r-tidyverse
+  - r-data.table
+  - r-ggplot2
+  - r-pheatmap
+  - r-patchwork
+  - r-cowplot
+  - r-matrix
+  - r-hdf5r
+  - r-seurat
+  - r-seuratobject
+  - r-remotes
+  - r-bookdown
+  - r-rmarkdown
+  - r-knitr
+  - bioconductor-singlecellexperiment
+  - bioconductor-summarizedexperiment
+  - bioconductor-scater
+  - bioconductor-scran
+  - bioconductor-dropletutils
+  - bioconductor-biocparallel
+  - bioconductor-deseq2
+  - bioconductor-edger
+  - bioconductor-limma
+  - bioconductor-complexheatmap
+  - bioconductor-clusterprofiler
+  - bioconductor-enrichplot
+  - bioconductor-dose
+  - bioconductor-go.db
+  - bioconductor-org.hs.eg.db
+  - bioconductor-org.mm.eg.db
+  - bioconductor-annotationdbi
+  - bioconductor-annotationhub
+  - bioconductor-biomart
+  - pandoc
