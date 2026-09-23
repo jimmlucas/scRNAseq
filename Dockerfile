@@ -32,7 +32,7 @@ ENV PATH=/opt/conda/envs/scrnaseq/bin:$PATH \
 # release. Switch the whole R library to 3.21 before adding study packages.
 RUN Rscript -e "options(timeout=600, Ncpus=2); BiocManager::install(version='3.21', ask=FALSE, update=TRUE); stopifnot(as.character(BiocManager::version()) == '3.21')"
 
-RUN Rscript -e "options(timeout=600, Ncpus=2); BiocManager::install(c('SingleCellExperiment','SummarizedExperiment','scater','scran','DropletUtils','BiocParallel','DESeq2','edgeR','limma','ComplexHeatmap','clusterProfiler','enrichplot','DOSE','GO.db','org.Hs.eg.db','org.Mm.eg.db','AnnotationDbi','AnnotationHub','biomaRt'), version='3.21', ask=FALSE, update=FALSE)"
+RUN Rscript -e "options(timeout=600, Ncpus=2); pkgs <- c('SingleCellExperiment','SummarizedExperiment','scater','scran','DropletUtils','BiocParallel','DESeq2','edgeR','limma','ComplexHeatmap','clusterProfiler','enrichplot','DOSE','GO.db','org.Hs.eg.db','org.Mm.eg.db','AnnotationDbi','AnnotationHub','biomaRt'); BiocManager::install(pkgs, version='3.21', ask=FALSE, update=FALSE); missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly=TRUE)]; if (length(missing)) stop('Bioconductor packages missing after installation: ', paste(missing, collapse=', '))"
 
 # Install DoubletFinder into the same R library.
 RUN Rscript -e "options(timeout=600); remotes::install_github('chris-mcginnis-ucsf/DoubletFinder', dependencies=NA, upgrade='never', lib=.libPaths()[1])"
