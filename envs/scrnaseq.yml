@@ -23,3 +23,9 @@ dependencies:
   - r-rmarkdown
   - r-knitr
   - pandoc
+  # Headers used when Bioconductor packages compile against Conda's R/toolchain.
+  - zlib
+  - cairo
+  - hdf5
+  - sqlite
+  - pkg-config
