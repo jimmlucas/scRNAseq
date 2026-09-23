@@ -25,7 +25,7 @@ ENV PATH=/opt/conda/envs/scrnaseq/bin:$PATH \
 
 # Install in the same R library as the rest of the environment. Avoid a
 # second dependency solver changing the pinned Bioconductor/Seurat stack.
-RUN Rscript -e "options(timeout=600); remotes::install_github('chris-mcginnis-ucsf/DoubletFinder', dependencies=FALSE, upgrade='never', lib=.libPaths()[1])"
+RUN Rscript -e "options(timeout=600); remotes::install_github('chris-mcginnis-ucsf/DoubletFinder', dependencies=NA, upgrade='never', lib=.libPaths()[1])"
 
 # Fail the build if any requested package is missing or fails to load.
 RUN Rscript -e "pkgs <- c('optparse','yaml','tidyverse','data.table','ggplot2','pheatmap','patchwork','cowplot','Matrix','hdf5r','Seurat','SeuratObject','remotes','bookdown','rmarkdown','knitr','SingleCellExperiment','SummarizedExperiment','scater','scran','DropletUtils','BiocParallel','DESeq2','edgeR','limma','ComplexHeatmap','clusterProfiler','enrichplot','DOSE','GO.db','org.Hs.eg.db','org.Mm.eg.db','AnnotationDbi','AnnotationHub','biomaRt','DoubletFinder'); invisible(lapply(pkgs, function(pkg) { library(pkg, character.only=TRUE); message('OK: ',pkg) })); stopifnot(as.character(BiocManager::version()) == '3.21'); sessionInfo()"
