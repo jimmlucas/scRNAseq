@@ -11,7 +11,12 @@ USER root
 
 # Git is used to install DoubletFinder; process tools help diagnose pipeline runs.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    git ca-certificates procps \
+    git ca-certificates procps build-essential pkg-config cmake \
+    libcurl4-openssl-dev libssl-dev libxml2-dev libgit2-dev \
+    libpng-dev libfreetype6-dev libharfbuzz-dev libfribidi-dev \
+    libxt-dev libx11-dev libglu1-mesa-dev zlib1g-dev libbz2-dev \
+    liblzma-dev libncurses-dev libfftw3-dev libtiff-dev libjpeg-dev \
+    libhdf5-dev libglpk-dev libgmp3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY envs/scrnaseq.yml /tmp/scrnaseq.yml
@@ -23,8 +28,11 @@ RUN conda env create -f /tmp/scrnaseq.yml \
 ENV PATH=/opt/conda/envs/scrnaseq/bin:$PATH \
     CONDA_PREFIX=/opt/conda/envs/scrnaseq
 
-# Install in the same R library as the rest of the environment. Avoid a
-# second dependency solver changing the pinned Bioconductor/Seurat stack.
+# BiocVersion 3.21 is unavailable in Bioconda. Install the matching
+# Bioconductor release through BiocManager inside the Conda R environment.
+RUN Rscript -e "options(timeout=600, Ncpus=2); BiocManager::install(c('SingleCellExperiment','SummarizedExperiment','scater','scran','DropletUtils','BiocParallel','DESeq2','edgeR','limma','ComplexHeatmap','clusterProfiler','enrichplot','DOSE','GO.db','org.Hs.eg.db','org.Mm.eg.db','AnnotationDbi','AnnotationHub','biomaRt'), version='3.21', ask=FALSE, update=FALSE)"
+
+# Install DoubletFinder into the same R library.
 RUN Rscript -e "options(timeout=600); remotes::install_github('chris-mcginnis-ucsf/DoubletFinder', dependencies=NA, upgrade='never', lib=.libPaths()[1])"
 
 # Fail the build if any requested package is missing or fails to load.
