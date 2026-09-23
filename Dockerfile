@@ -28,8 +28,10 @@ RUN conda env create -f /tmp/scrnaseq.yml \
 ENV PATH=/opt/conda/envs/scrnaseq/bin:$PATH \
     CONDA_PREFIX=/opt/conda/envs/scrnaseq
 
-# BiocVersion 3.21 is unavailable in Bioconda. Install the matching
-# Bioconductor release through BiocManager inside the Conda R environment.
+# Some Conda dependencies include packages from a newer Bioconductor
+# release. Switch the whole R library to 3.21 before adding study packages.
+RUN Rscript -e "options(timeout=600, Ncpus=2); BiocManager::install(version='3.21', ask=FALSE, update=TRUE); stopifnot(as.character(BiocManager::version()) == '3.21')"
+
 RUN Rscript -e "options(timeout=600, Ncpus=2); BiocManager::install(c('SingleCellExperiment','SummarizedExperiment','scater','scran','DropletUtils','BiocParallel','DESeq2','edgeR','limma','ComplexHeatmap','clusterProfiler','enrichplot','DOSE','GO.db','org.Hs.eg.db','org.Mm.eg.db','AnnotationDbi','AnnotationHub','biomaRt'), version='3.21', ask=FALSE, update=FALSE)"
 
 # Install DoubletFinder into the same R library.
