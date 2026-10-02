@@ -1,0 +1,27 @@
+name: scrnaseq
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  # Bioconductor 3.21 is installed into this environment by BiocManager.
+  - r-base=4.5
+  - r-biocmanager
+  - r-optparse
+  - r-yaml
+  - r-tidyverse
+  - r-data.table
+  - r-ggplot2
+  - r-pheatmap
+  - r-patchwork
+  - r-cowplot
+  - r-matrix
+  - r-hdf5r
+  - r-seurat
+  - r-seuratobject
+  - r-remotes
+  - r-bookdown
+  - r-rmarkdown
+  - r-knitr
+  - pandoc
+  # Headers used when Bioconductor packages compile against Conda's R/toolchain.
+  - zlib
